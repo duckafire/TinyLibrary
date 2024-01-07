@@ -1,7 +1,114 @@
--- Copy and paste the code in your cart [v: 1.3]
+-- Copy and paste the code in your cart [v: 1.4.5]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
+
+local function checkBodies( par, types )-- all parameters; type of bodies
+	local id, bodies, lastPar = 1, { 0, 0 }, 0
+	
+	for i = 1, #types do
+		local cur = par[ id ]-- CURrent parameter to check
+		local res = 0-- result of conditions
+		
+		if type( cur ) == "table" then-- 1, 2 (0)
+			if cur.x then   bodies[i] = cur   else   bodies[i] = newBody( types[i], cur[1], cur[2], cur[3], cur[4] )   end
+		else-- 3
+			res, bodies[i] = 3, ( types[i], par[id], par[id + 1], par[id + 2], par[id + 3] )
+		end
+		
+		-- update "id" to check the next parameter
+		if res == 3 then
+			local adj = types[i] == "circ" and 1 or types[i] == "xy" and 2 or 0
+			id = 4 - adj
+		else
+			id = 2
+		end
+		
+		-- to return the last parameter related with objects bodies
+		lastPar = lastPar + id
+	end
+	
+	return bodies[1], bodies[2], lastPar + 1
+end
+
+function distance( ... )
+	local objA, objB = checkBodies(  )
+	return math.sqrt( ( objA.x - objB.x ) ^ 2 + ( objA.y - objB.y ) ^ 2 )
+end
+
+function newBody( Type, x, y, width_radius, height )
+	local body = { x = x, y = y }
+	
+	if     Type == "rect" then
+		body.width  = width_radius
+		body.height = height
+	elseif Type == "circ" then
+		body.radius = width_radius
+	elseif Type ~= "xy" then
+		error( 'The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
+	end
+	
+	return body
+end
+
+
+
+function checkBody( Type, body, initID )-- internal function
+	local id = initID or 1
+	
+	if type( body[id] ) == "table" then
+		if body[id].x then
+			return body[id]
+		else
+			return newBody( Type, body[id][1], body[id][2], body[id][3], body[id][4] )
+		end
+	else
+		return newBody( Type, body[id], body[1 + id], body[2 + id], body[3 + id] )
+	end
+
+end
+
+function tileCross( ... )
+	local par = { ... }
+	local obj = checkBody( "rect", par )
+	local Type = type( par[2] ) == "boolean" and par[2] or par[5]
+	local collisions = Type and { top = tile( obj, "top" ), below = tile( obj, "below" ), left = tile( obj, "left" ), right = tile( obj, "right" ) } or { tile( obj, "top" ), tile( obj, "below" ), tile( obj, "left" ), tile( obj, "right" ) }
+	return collisions
+end
+
+function mapAlign( ... )
+	local par, x, y, width, height, center = { ... }
+	if type( par[1] ) == "table" then
+		if par[1].x then
+			x, y, width, height = par[1].x, par[1].y, par[1].width, par[1].height
+		else
+			x, y, width, height = par[1][1], par[1][2], par[1][3], par[1][4]
+		end
+	else
+		x, y, width, height = par[1], par[2], par[3], par[4]
+	end
+	center = type( par[2] ) == "boolean" and par[2] or par[5]
+	if center then
+		x = x + width  // 2
+		y = y + height // 2
+	end
+	return (math.floor( x ) // 8) * 8, (math.floor( y ) // 8) * 8
+end
+
+function distance( ... )
+	local par, obj, j = { ... }, {}, 1-- "j" to par. index
+	for i = 1, 2 do-- "i" to current table of obj
+		if type( par[j] ) == "table" then
+			if par[j].x then   obj[i] = par[j]   else   obj[i] = { x = par[j][1], y = par[j][2] }   end
+			j = 2
+		else
+			obj[i] = { x = par[j], y = par[j + 1] }
+			j = 3
+		end
+	end
+	return ( obj[1].x - obj[2].x ) ^ 2 + ( obj[1].y - obj[2].y ) ^ 2
+end
+
 
 local function tileCross( ... )
 	local par = { ... }
@@ -42,11 +149,6 @@ do
 	-- MAP TILES -------------------------------------------------------------
 
 	local function tile( obj, Type, tileID )
-		local par    = { ... }-- PARameters
-		local obj    = checkBody( "rect", par )
-		local Type   = type( par[2] ) == "string" and par[2] or par[5]
-		local tileID = type( par[3] ) == "number" and par[3] or par[6]
-		
 		local w, h, tile = obj.width or 8, obj.height or 8, tileID or 0
 		local x1, y1, x2, y2-- to add XY
 			
@@ -55,7 +157,7 @@ do
 		elseif Type == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
 		elseif Type == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
 		else error( 'The parameter "Type" is invalid, try "top", "below", "left" or "right" (function: "coli2DA.tile")' ) end
-
+		
 		return fget( mget( (obj.x + x1) // 8, (obj.y + y1) // 8), tile ) and-- 1
 			   fget( mget( (obj.x + x2) // 8, (obj.y + y2) // 8), tile )	-- 2
 	end
