@@ -1,72 +1,62 @@
--- Copy and paste the code in your cart [v: 1.4.5]
+-- Copy and paste the code in your cart [v: 1.4.6]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
 
-local function checkBodies( par, types )-- all parameters; type of bodies
-	local id, bodies, lastPar = 1, { 0, 0 }, 0
+do
+	----- HEAD OF LIBRARY -----
 	
-	for i = 1, #types do
-		local cur = par[ id ]-- CURrent parameter to check
-		local res = 0-- result of conditions
+	local function newBody( Type, x, y, width_radius, height )
+		local body = { x = x, y = y }
 		
-		if type( cur ) == "table" then-- 1, 2 (0)
-			if cur.x then   bodies[i] = cur   else   bodies[i] = newBody( types[i], cur[1], cur[2], cur[3], cur[4] )   end
-		else-- 3
-			res, bodies[i] = 3, ( types[i], par[id], par[id + 1], par[id + 2], par[id + 3] )
+		if     Type == "rect" then
+			body.width  = width_radius
+			body.height = height
+		elseif Type == "circ" then
+			body.radius = width_radius
+		elseif Type ~= "xy" then
+			error( 'The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
 		end
 		
-		-- update "id" to check the next parameter
-		if res == 3 then
-			local adj = types[i] == "circ" and 1 or types[i] == "xy" and 2 or 0
-			id = 4 - adj
-		else
-			id = 2
-		end
-		
-		-- to return the last parameter related with objects bodies
-		lastPar = lastPar + id
+		return body
 	end
-	
-	return bodies[1], bodies[2], lastPar + 1
-end
 
-function distance( ... )
-	local objA, objB = checkBodies(  )
-	return math.sqrt( ( objA.x - objB.x ) ^ 2 + ( objA.y - objB.y ) ^ 2 )
-end
+	local function checkBodies( par, types )-- all parameters; type of bodies(max: 2)
+		local id, bodies, lastPar = 1, { {}, {} }, 0-- "lastPar" store the position (id) of last parameter, used in a body, more one.
+		
+		for i = 1, #types do
+			local adj = types[i] == "circ" and 1 or types[i] == "xy" and 2 or 0-- ADJust parameters indexs (id and lastPar)
+			local cur = par[ id ]-- CURrent parameter to check
+			local res = 0-- result of conditions
 
-function newBody( Type, x, y, width_radius, height )
-	local body = { x = x, y = y }
-	
-	if     Type == "rect" then
-		body.width  = width_radius
-		body.height = height
-	elseif Type == "circ" then
-		body.radius = width_radius
-	elseif Type ~= "xy" then
-		error( 'The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
-	end
-	
-	return body
-end
+			if type( cur ) == "table" then-- 1, 2 (0)
+				if cur.x then   bodies[i] = cur   else   bodies[i] = newBody( types[i], cur[1], cur[2], cur[3], cur[4] )   end
+				lastPar = lastPar + 1
+			else-- 3
+				res, bodies[i] = 3, newBody( types[i], par[id], par[id + 1], par[id + 2], par[id + 3] )
+				lastPar = lastPar + 4 - adj
+			end
+			
+			-- update "id" to check the next parameter
+			if res == 3 then   id = 5 - adj   else   id = 2   end
 
-
-
-function checkBody( Type, body, initID )-- internal function
-	local id = initID or 1
-	
-	if type( body[id] ) == "table" then
-		if body[id].x then
-			return body[id]
-		else
-			return newBody( Type, body[id][1], body[id][2], body[id][3], body[id][4] )
 		end
-	else
-		return newBody( Type, body[id], body[1 + id], body[2 + id], body[3 + id] )
+		
+		return bodies[1], bodies[2], par, lastPar + 1
+	end
+
+	----- GEOGRAFY AND MATHEMATICS -----
+
+	local function distance( ... )
+		local objA, objB = checkBodies( { ... }, { "xy", "xy" } )
+		return math.sqrt( ( objA.x - objB.x ) ^ 2 + ( objA.y - objB.y ) ^ 2 )
 	end
 
 end
+--[[
+newBody
+distance
+]]
 
 function tileCross( ... )
 	local par = { ... }
@@ -76,37 +66,15 @@ function tileCross( ... )
 	return collisions
 end
 
-function mapAlign( ... )
-	local par, x, y, width, height, center = { ... }
-	if type( par[1] ) == "table" then
-		if par[1].x then
-			x, y, width, height = par[1].x, par[1].y, par[1].width, par[1].height
-		else
-			x, y, width, height = par[1][1], par[1][2], par[1][3], par[1][4]
-		end
-	else
-		x, y, width, height = par[1], par[2], par[3], par[4]
+local function mapAlign( ... )
+	local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
+	
+	if par[ lastPar ] then-- based in the approximate center of object
+		obj.x = obj.x + obj.width  // 2
+		obj.y = obj.y + obj.height // 2
 	end
-	center = type( par[2] ) == "boolean" and par[2] or par[5]
-	if center then
-		x = x + width  // 2
-		y = y + height // 2
-	end
-	return (math.floor( x ) // 8) * 8, (math.floor( y ) // 8) * 8
-end
-
-function distance( ... )
-	local par, obj, j = { ... }, {}, 1-- "j" to par. index
-	for i = 1, 2 do-- "i" to current table of obj
-		if type( par[j] ) == "table" then
-			if par[j].x then   obj[i] = par[j]   else   obj[i] = { x = par[j][1], y = par[j][2] }   end
-			j = 2
-		else
-			obj[i] = { x = par[j], y = par[j + 1] }
-			j = 3
-		end
-	end
-	return ( obj[1].x - obj[2].x ) ^ 2 + ( obj[1].y - obj[2].y ) ^ 2
+	
+	return (obj.x // 8) * 8, (obj.y // 8) * 8
 end
 
 
