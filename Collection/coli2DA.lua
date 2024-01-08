@@ -1,4 +1,4 @@
--- Copy and paste the code in your cart [v: 1.4.7]
+-- Copy and paste the code in your cart [v: 1.5]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -14,7 +14,7 @@ do
 			body.height = height
 		elseif Type == "circ" then
 			body.radius = width_radius
-		elseif Type ~= "xy" then
+		elseif Type ~= "simp" then
 			error( 'The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
 		end
 		
@@ -25,7 +25,7 @@ do
 		local id, bodies, lastPar = 1, { {}, {} }, 0-- "lastPar" store the position (id) of last parameter, used in a body, more one.
 		
 		for i = 1, #types do
-			local adj = types[i] == "circ" and 1 or types[i] == "xy" and 2 or 0-- ADJust parameters indexs (id and lastPar)
+			local adj = types[i] == "circ" and 1 or types[i] == "simp" and 2 or 0-- ADJust parameters indexs (id and lastPar)
 			local cur = par[ id ]-- CURrent parameter to check
 			local res = 0-- result of conditions
 
@@ -47,8 +47,8 @@ do
 
 	----- GEOGRAFY AND MATHEMATICS -----
 
-	local function distance( ... )-- two "simple object (xy)"
-		local objA, objB = checkBodies( { ... }, { "xy", "xy" } )
+	local function distance( ... )-- two simp object
+		local objA, objB = checkBodies( { ... }, { "simp", "simp" } )
 		return math.sqrt( ( objA.x - objB.x ) ^ 2 + ( objA.y - objB.y ) ^ 2 )
 	end
 	
@@ -91,20 +91,10 @@ do
 								  { 	  tile( obj, "top" ), 		  tile( obj, "below" ), 	   tile( obj, "left" ), 		tile( obj, "right" ) }
 	end
 
-end
---[[
-newBody
-distance
-mapAlign
-tileCross
-tile
-]]
-
 	-- CURSOR / TOUCH -------------------------------------------------------------
 
-	local function touch( ... )
-		local obj	 = checkBody( "rect", { ... } )
-		local cursor = checkBody( "rect", { ... }, 5 )
+	local function touch( ... )-- two rect object (2st is optional)
+		local obj, cursor = checkBodies( { ... }, { "rect", "rect" } )
 		
 		cursor.x, cursor.y = mouse()
 		
@@ -116,16 +106,26 @@ tile
 			   cursor.y + cursor.height - 1 >= obj.y				  and
 			   cursor.y						<= obj.y + obj.height - 1
 	end
-
+	
 	-- POINT OF IMPACT -------------------------------------------------------------
 
-	local function impactPixel( Type, mixA, mixB )
-		if 	   Type == "rect" then
+	local function impactPixel( ... )-- two objects (rect-rect; circ-circ; circ-rect); collision type
+		local temp, typeA, typeB = { ... }
+	
+		if     temp[#temp - 1] == "rect" then typeA, typeB = "rect", "rect"-- 
+		elseif temp[#temp - 1] == "circ" then typeA, typeB = "circ", "circ"
+		elseif temp[#temp - 1] == "mix"  then typeA, typeB = "circ", "rect"
+		else error( 'The parameter "Type" is invalid, try "rect", "circ" or "mix" (function "coli2DA.impactPixel")' )
+		end
+	
+		local mixA, mixB, par, lastPar = checkBodies( temp, { typeA, typeB } )
+	
+		if 	   par[ lastPar ] == "rect" then
 			local newMixA = {   x = mixA.x + mixA.width / 2,   y = mixA.y + mixA.height / 2,   radius = (mixA.width + mixA.height) / 2   }
 			local newMixB = {   x = mixB.x + mixB.width / 2,   y = mixB.y + mixB.height / 2,   radius = (mixB.width + mixB.height) / 2   }
-			return impactPixel( "circ", newMixA, newMixB )-- "tranform" all in circles
+			return impactPixel( newMixA, newMixB, "circ" )-- "tranform" all in circles
 		
-		elseif Type == "circ" then
+		elseif par[ lastPar ] == "circ" then
 			local x = (mixA.x * mixB.radius) + (mixB.x * mixA.radius)
 			local y = (mixA.y * mixB.radius) + (mixB.y * mixA.radius) 
 			
@@ -133,7 +133,7 @@ tile
 		
 			return x / totalRadius, y / totalRadius
 		
-		elseif Type == "mix"  then
+		elseif par[ lastPar ] == "mix"  then
 			local x, y
 			
 			local Circ = {   x = mixA.x,   y = mixA.y,   radius = mixA.radius   }
@@ -145,16 +145,13 @@ tile
 		
 			return x, y
 		
-		else
-			error( 'The parameter "Type" is invalid, try "rect", "circ" or "mix" (function "coli2DA.impactPixel")' )
 		end
 	end
 
 	-- SHAPES IMPACT -------------------------------------------------------------
 
-	local function rectangle( ... )
-		local rectA = checkBody( "rect", { ... } )
-		local rectB = checkBody( "rect", { ... }, 5 )
+	local function rectangle( ... )-- two rect object
+		local rectA, rectB = checkBodies( { ... }, { "rect", "rect" } )
 	
 		local rectAW, rectAH = rectA.width or 1, rectA.height or 1--default is zero
 		local rectBW, rectBH = rectB.width or 1, rectB.height or 1
@@ -169,31 +166,38 @@ tile
 	end
 
 	local function circle( ... )
-		local par = { ... }-- to use in "twoBodies"
-		local circleA = checkBody( "circ", par )
-		local circleB = checkBody( "circ", par, 4 )
+		local circleA, circleB, par, lastPar = checkBodies( { ... }, { "circ", "circ" } )
 		
-		local twoBodies   = type(par[3]) == "boolean" and par[3] or type(par[7]) == "boolean" and par[7] or false
-		local totalRadius = twoBodies and circleA.radius + circleB.radius or circleB.radius
+		local totalRadius = par[ lastPar ] and circleA.radius + circleB.radius or circleB.radius
 		
 		return ( circleA.x - circleB.x ) ^ 2 + ( circleA.y - circleB.y ) ^ 2 <= totalRadius ^ 2
 	end
 
-	local function shapesMix( ... )
-		local Circ = checkBody( "circ", { ... } )
-		local Rect = checkBody( "rect", { ... }, 4 )
+	local function shapesMix( ... )-- circ and rect object
+		local Circ, Rect = checkBodies( { ... }, { "circ", "rect" } )
 	
 		local tempCircle = {}
 		
 		tempCircle.radius = 0
-		tempCircle.x, tempCircle.y = impactPixel( "mix", Circ, Rect )-- "transform" the rectangle in a circle
+		tempCircle.x, tempCircle.y = impactPixel( Circ, Rect, "mix" )-- "transform" the rectangle in a circle
 
 		return circle( tempCircle, Circ )-- collision between Circ and Rect (now is a "circle")
 	end
-	
+
 	-- ADD TO TABLE -------------------------------------------------------------
 
-	
+	coli2DA.newBody 	= newBody
+	coli2DA.distance 	= distance
+	coli2DA.mapAlign 	= mapAlign
+	coli2DA.tileCross 	= tileCross
+	coli2DA.tile 		= tile
+	coli2DA.touch 		= touch
+	coli2DA.impactPixel = impactPixel
+	coli2DA.rectangle 	= rectangle
+	coli2DA.circle 		= circle
+	coli2DA.shapeMix 	= shapeMix
+
+end
 
 local coli = coli2DA -- library reference
 
