@@ -1,4 +1,4 @@
--- Copy and paste the code in your cart [v: 1.5]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.5]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
