@@ -8,8 +8,11 @@ Esta é uma **Coleção de Bibliotecas** criadas por Duckafire, para serem usada
 | coli2DA | Verifica colisões entre objetos |
 | === | Em breve |
 
+<<<<<<< HEAD
 ---
 
+=======
+>>>>>>> 4945002010e9ca6b618a1e4daa3aa8c7a8529d10
 ## Como usar/ativar:
 O Tic80 tem uma certa ""dificuldade"" para ler bibliotecas da maneira *tradicional*:
 ```
@@ -21,8 +24,11 @@ Não há segredo, basta: escolher a biblioteca desejada, sua **variante** , aces
 
 Sem segredo, mas **recomendo** colá-las no topo do códico.
 
+<<<<<<< HEAD
 ---
 
+=======
+>>>>>>> 4945002010e9ca6b618a1e4daa3aa8c7a8529d10
 ## Variantes de biblioteca
 Todas as bibliotecas deste repositório estão disponíveis em três formatos: *compactado*, *não compactado* e *convencional*.
 
