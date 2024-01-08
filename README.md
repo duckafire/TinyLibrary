@@ -8,11 +8,8 @@ Esta é uma **Coleção de Bibliotecas** criadas por Duckafire, para serem usada
 | coli2DA | Verifica colisões entre objetos |
 | === | Em breve |
 
-<<<<<<< HEAD
 ---
 
-=======
->>>>>>> 4945002010e9ca6b618a1e4daa3aa8c7a8529d10
 ## Como usar/ativar:
 O Tic80 tem uma certa ""dificuldade"" para ler bibliotecas da maneira *tradicional*:
 ```
@@ -20,17 +17,14 @@ local reference = require( "path.library" )-- in lua
 ```
 Mas não significa que ele não possar fazer (por isso existem as __*convencionais*__)). Mesmo assim, tentar usar bibliotecas de maneira convencional no Tic80, pode ser um pouco chato, é por causa disso que as bibliotecas desta coleção foram desenhadas para serem copiadas e coladas dentro dos cartuchos.
 
-Não há segredo, basta: escolher a biblioteca desejada, sua **variante** , acessar seu arquivo neste repositório (*não precisa nem baixar*), copiar seu conteúdo e colar no seu cartucho.
+Não há segredo, basta: escolher a biblioteca desejada, sua **variante**, acessar seu arquivo neste repositório (*não precisa nem baixar*), copiar seu conteúdo e colar no seu cartucho.
 
 Sem segredo, mas **recomendo** colá-las no topo do códico.
 
-<<<<<<< HEAD
 ---
 
-=======
->>>>>>> 4945002010e9ca6b618a1e4daa3aa8c7a8529d10
 ## Variantes de biblioteca
-Todas as bibliotecas deste repositório estão disponíveis em três formatos: *compactado*, *não compactado* e *convencional*.
+Todas as bibliotecas deste repositório estão disponíveis em três formatos: __*compactado*__, __*não compactado*__ e __*convencional*__.
 
 ---
 
