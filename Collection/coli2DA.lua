@@ -1,4 +1,4 @@
--- Copy and paste the code in your cart [v: 1.4.6]
+-- Copy and paste the code in your cart [v: 1.4.7]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -47,88 +47,58 @@ do
 
 	----- GEOGRAFY AND MATHEMATICS -----
 
-	local function distance( ... )
+	local function distance( ... )-- two "simple object (xy)"
 		local objA, objB = checkBodies( { ... }, { "xy", "xy" } )
 		return math.sqrt( ( objA.x - objB.x ) ^ 2 + ( objA.y - objB.y ) ^ 2 )
+	end
+	
+	local function mapAlign( ... )-- two rect object; boolean
+		local par = { ... }
+		if type(par[1]) ~= "table" and #par < 4 then error( '[coli2DA] Parameter not expecified in table "mapAlign".' ) end-- check values "width" and "height", in format: func( 10, 10, 10, 10, (false/true) )
+		local obj, _, par, lastPar = checkBodies( par, { "rect" } )
+		
+		if par[ lastPar ] then-- based in the approximate center of object
+			local width  = obj.width  or 8
+			local height = obj.height or 8
+			obj.x = obj.x + width  // 2
+			obj.y = obj.y + height // 2
+		end
+		
+		return (obj.x // 8) * 8, (obj.y // 8) * 8
+	end
+
+	----- MAP -----
+
+	local function tile( ... )-- rect object; type; id flag (optional)
+		local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
+		
+		local w, h, flagID = obj.width, obj.height, par[ lastPar + 1 ] or 0
+		local x1, y1, x2, y2-- to add XY
+		
+		if     par[ lastPar ] == "top"   then x1, y1, x2, y2 =  0, -1,  w - 1, -1
+		elseif par[ lastPar ] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
+		elseif par[ lastPar ] == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
+		elseif par[ lastPar ] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
+		else error( 'The parameter "Type" is invalid, try "top", "below", "left" or "right" (function: "coli2DA.tile")' ) end
+		
+		return fget( mget( (obj.x + x1) // 8, (obj.y + y1) // 8), flagID ) and-- 1
+			   fget( mget( (obj.x + x2) // 8, (obj.y + y2) // 8), flagID )	-- 2
+	end
+
+	local function tileCross( ... )-- rect object; bollean
+		local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
+		return par[ lastPar ] and { top = tile( obj, "top" ), below = tile( obj, "below" ), left = tile( obj, "left" ), right = tile( obj, "right" ) } or
+								  { 	  tile( obj, "top" ), 		  tile( obj, "below" ), 	   tile( obj, "left" ), 		tile( obj, "right" ) }
 	end
 
 end
 --[[
 newBody
 distance
+mapAlign
+tileCross
+tile
 ]]
-
-function tileCross( ... )
-	local par = { ... }
-	local obj = checkBody( "rect", par )
-	local Type = type( par[2] ) == "boolean" and par[2] or par[5]
-	local collisions = Type and { top = tile( obj, "top" ), below = tile( obj, "below" ), left = tile( obj, "left" ), right = tile( obj, "right" ) } or { tile( obj, "top" ), tile( obj, "below" ), tile( obj, "left" ), tile( obj, "right" ) }
-	return collisions
-end
-
-local function mapAlign( ... )
-	local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
-	
-	if par[ lastPar ] then-- based in the approximate center of object
-		obj.x = obj.x + obj.width  // 2
-		obj.y = obj.y + obj.height // 2
-	end
-	
-	return (obj.x // 8) * 8, (obj.y // 8) * 8
-end
-
-
-local function tileCross( ... )
-	local par = { ... }
-	local obj = checkBody( "rect", par )
-	local Type = type( par[2] ) == "boolean" and par[2] or par[5]
-	local collisions = Type and { top = tile( obj, "top" ), below = tile( obj, "below" ), left = tile( obj, "left" ), right = tile( obj, "right" ) } or { tile( obj, "top" ), tile( obj, "below" ), tile( obj, "left" ), tile( obj, "right" ) }
-	return collisions
-end
-
-do
-	-- CREATE BODIES -------------------------------------------------------------
-	
-	local function newBody( Type, x, y, width_radius, height )
-		if     Type == "rect" then
-			return { x = x, y = y, width = width_radius, height = height }
-		elseif Type == "circ" then
-			return { x = x, y = y, radius = width_radius }
-		else
-			error( 'The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
-		end
-	end
-	
-	local function checkBody( Type, body, initID )-- internal function
-		local id = initID or 1
-		
-		if type( body[id] ) == "table" then
-			if body[id].x then
-				return body[id]
-			else
-				return newBody( Type, body[id][1], body[id][2], body[id][3], body[id][4] )
-			end
-		else
-			return newBody( Type, body[id], body[1 + id], body[2 + id], body[3 + id] )
-		end
-	
-	end
-	
-	-- MAP TILES -------------------------------------------------------------
-
-	local function tile( obj, Type, tileID )
-		local w, h, tile = obj.width or 8, obj.height or 8, tileID or 0
-		local x1, y1, x2, y2-- to add XY
-			
-		if     Type == "top"   then x1, y1, x2, y2 =  0, -1,  w - 1, -1
-		elseif Type == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
-		elseif Type == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
-		elseif Type == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
-		else error( 'The parameter "Type" is invalid, try "top", "below", "left" or "right" (function: "coli2DA.tile")' ) end
-		
-		return fget( mget( (obj.x + x1) // 8, (obj.y + y1) // 8), tile ) and-- 1
-			   fget( mget( (obj.x + x2) // 8, (obj.y + y2) // 8), tile )	-- 2
-	end
 
 	-- CURSOR / TOUCH -------------------------------------------------------------
 
@@ -222,16 +192,8 @@ do
 	end
 	
 	-- ADD TO TABLE -------------------------------------------------------------
+
 	
-	coli2DA.newBody			= newBody
-	coli2DA.tile			= tile
-	coli2DA.touch			= touch
-	coli2DA.impactPixel		= impactPixel
-	coli2DA.rectagle		= rectangle
-	coli2DA.circle			= circle
-	coli2DA.shapesMix		= shapesMix
-	
-end
 
 local coli = coli2DA -- library reference
 
