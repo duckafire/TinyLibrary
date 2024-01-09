@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.5]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.5.1]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -15,7 +15,7 @@ do
 		elseif Type == "circ" then
 			body.radius = width_radius
 		elseif Type ~= "simp" then
-			error( 'The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
+			error( '[coli2DA] The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
 		end
 		
 		return body
@@ -54,7 +54,7 @@ do
 	
 	local function mapAlign( ... )-- two rect object; boolean
 		local par = { ... }
-		if type(par[1]) ~= "table" and #par < 4 then error( '[coli2DA] Parameter not expecified in table "mapAlign".' ) end-- check values "width" and "height", in format: func( 10, 10, 10, 10, (false/true) )
+		if type(par[1]) ~= "table" and #par < 4 then error( '[coli2DA] Parameters not expecified in table "mapAlign".' ) end-- check if the values "width" and "height" exist, in format: func( 10, 10, 10, 10, (false/true) )
 		local obj, _, par, lastPar = checkBodies( par, { "rect" } )
 		
 		if par[ lastPar ] then-- based in the approximate center of object
@@ -79,7 +79,7 @@ do
 		elseif par[ lastPar ] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
 		elseif par[ lastPar ] == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
 		elseif par[ lastPar ] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
-		else error( 'The parameter "Type" is invalid, try "top", "below", "left" or "right" (function: "coli2DA.tile")' ) end
+		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right" (function: "coli2DA.tile")' ) end
 		
 		return fget( mget( (obj.x + x1) // 8, (obj.y + y1) // 8), flagID ) and-- 1
 			   fget( mget( (obj.x + x2) // 8, (obj.y + y2) // 8), flagID )	-- 2
@@ -91,7 +91,7 @@ do
 								  { 	  tile( obj, "top" ), 		  tile( obj, "below" ), 	   tile( obj, "left" ), 		tile( obj, "right" ) }
 	end
 
-	-- CURSOR / TOUCH -------------------------------------------------------------
+	----- CURSOR / TOUCH -----
 
 	local function touch( ... )-- two rect object (2st is optional)
 		local obj, cursor = checkBodies( { ... }, { "rect", "rect" } )
@@ -107,7 +107,7 @@ do
 			   cursor.y						<= obj.y + obj.height - 1
 	end
 	
-	-- POINT OF IMPACT -------------------------------------------------------------
+	----- POINT OF IMPACT -----
 
 	local function impactPixel( ... )-- two objects (rect-rect; circ-circ; circ-rect); collision type
 		local temp, typeA, typeB = { ... }
@@ -115,7 +115,7 @@ do
 		if     temp[#temp - 1] == "rect" then typeA, typeB = "rect", "rect"-- 
 		elseif temp[#temp - 1] == "circ" then typeA, typeB = "circ", "circ"
 		elseif temp[#temp - 1] == "mix"  then typeA, typeB = "circ", "rect"
-		else error( 'The parameter "Type" is invalid, try "rect", "circ" or "mix" (function "coli2DA.impactPixel")' )
+		else error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "mix" (function "coli2DA.impactPixel")' )
 		end
 	
 		local mixA, mixB, par, lastPar = checkBodies( temp, { typeA, typeB } )
@@ -148,7 +148,7 @@ do
 		end
 	end
 
-	-- SHAPES IMPACT -------------------------------------------------------------
+	----- SHAPES IMPACT -----
 
 	local function rectangle( ... )-- two rect object
 		local rectA, rectB = checkBodies( { ... }, { "rect", "rect" } )
@@ -184,7 +184,7 @@ do
 		return circle( tempCircle, Circ )-- collision between Circ and Rect (now is a "circle")
 	end
 
-	-- ADD TO TABLE -------------------------------------------------------------
+	----- ADD TO TABLE -----
 
 	coli2DA.newBody 	= newBody
 	coli2DA.distance 	= distance
