@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.5.1]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.6.1]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -101,10 +101,10 @@ do
 		cursor.width  = cursor.width  and math.abs( cursor.width  ) or 0-- only positive values
 		cursor.height = cursor.height and math.abs( cursor.height ) or 0
 		
-		return cursor.x + cursor.width  - 1 >= obj.x				  and
-			   cursor.x						<= obj.x + obj.width  - 1 and
-			   cursor.y + cursor.height - 1 >= obj.y				  and
-			   cursor.y						<= obj.y + obj.height - 1
+		return cursor.x + cursor.width  - 1 >= obj.x					  and
+			   cursor.x						<= obj.x + obj.width  - obj.x and
+			   cursor.y + cursor.height - 1 >= obj.y					  and
+			   cursor.y						<= obj.y + obj.height - obj.y
 	end
 	
 	----- POINT OF IMPACT -----

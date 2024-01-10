@@ -1,5 +1,5 @@
 local AUTHOR  = "DuckAfire"
-local VERSION = "1.5"
+local VERSION = "1.6"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -139,10 +139,10 @@ local function touch( ... )-- two rect object (2st is optional)
 	cursor.width  = cursor.width  and math.abs( cursor.width  ) or 0-- only positive values
 	cursor.height = cursor.height and math.abs( cursor.height ) or 0
 	
-	return cursor.x + cursor.width  - 1 >= obj.x				  and
-		   cursor.x						<= obj.x + obj.width  - 1 and
-		   cursor.y + cursor.height - 1 >= obj.y				  and
-		   cursor.y						<= obj.y + obj.height - 1
+	return cursor.x + cursor.width  - 1 >= obj.x					  and
+		   cursor.x						<= obj.x + obj.width  - obj.x and
+		   cursor.y + cursor.height - 1 >= obj.y					  and
+		   cursor.y						<= obj.y + obj.height - obj.y
 end
 
 
