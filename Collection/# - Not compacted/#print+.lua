@@ -7,10 +7,21 @@ do
 	
 	----- TO PRINT FUNCTION -----
 	
-	local function lenght( word, lines, fixed, size, small )
-		local lines = lines or 1
+	local function lenght( word, Break, fixed, size, small )
+		local lines   = type( Break ) ~= "table" and Break or Break[1] or Break.lines or 1
+		local spLines = Break[2] or Break.spaces or 5
+		local ifSmall = small and #word * 2 or 0
+		local ifFixed = 0
 		
-		return print( word, 0, 136, 0, small, size or 1, fixed ), 6 * lines
+		if fixed then
+			for i = 1, #word do
+				if string.sub( word, i, i ) == " " then
+					ifFixed = ifFixed + 2
+				end
+			end
+		end
+		
+		return print( word, 0, 136, size ) - ifSmall + ifFixed, lines * spLines
 	end
 
 	local function center( word, x, y, lines, fixed, size, small )

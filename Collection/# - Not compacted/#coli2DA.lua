@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.6.1]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.6.2]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -98,8 +98,8 @@ do
 		
 		cursor.x, cursor.y = mouse()
 		
-		cursor.width  = cursor.width  and math.abs( cursor.width  ) or 0-- only positive values
-		cursor.height = cursor.height and math.abs( cursor.height ) or 0
+		cursor.width  = cursor.width  and math.abs( cursor.width  ) or 1-- only positive values
+		cursor.height = cursor.height and math.abs( cursor.height ) or 1
 		
 		return cursor.x + cursor.width  - 1 >= obj.x					  and
 			   cursor.x						<= obj.x + obj.width  - obj.x and
