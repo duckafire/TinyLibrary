@@ -19,5 +19,3 @@ with the main objective to facilitate the creation of *tiny* games.
 * [Itch.io](https://duckafire.itch.io)  
 * [GitHub](https://github.com/duckafire)  
 * [Tic80](https://tic80.com/dev?id=8700)  
-
-[/]: # (https://github.com/nesbox/TIC-80/wiki/Using-require-to-load-external-code-into-your-cart)
