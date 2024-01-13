@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.6.2]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.6.3]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -7,13 +7,13 @@ do
 	----- HEAD OF LIBRARY -----
 	
 	local function newBody( Type, x, y, width_radius, height )
-		local body = { x = x, y = y }
+		local body = { x = x or 0, y = y or 0 }
 		
 		if     Type == "rect" then
-			body.width  = width_radius
-			body.height = height
+			body.width  = width_radius or 0
+			body.height = height or 0
 		elseif Type == "circ" then
-			body.radius = width_radius
+			body.radius = width_radius or 0
 		elseif Type ~= "simp" then
 			error( '[coli2DA] The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
 		end
@@ -57,14 +57,16 @@ do
 		if type(par[1]) ~= "table" and #par < 4 then error( '[coli2DA] Parameters not expecified in table "mapAlign".' ) end-- check if the values "width" and "height" exist, in format: func( 10, 10, 10, 10, (false/true) )
 		local obj, _, par, lastPar = checkBodies( par, { "rect" } )
 		
+		local x, y = obj.x, obj.y
+		
 		if par[ lastPar ] then-- based in the approximate center of object
 			local width  = obj.width  or 8
 			local height = obj.height or 8
-			obj.x = obj.x + width  // 2
-			obj.y = obj.y + height // 2
+			x = x + width  // 2
+			y = y + height // 2
 		end
 		
-		return (obj.x // 8) * 8, (obj.y // 8) * 8
+		return (x // 8) * 8, (y // 8) * 8
 	end
 
 	----- MAP -----
