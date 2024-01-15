@@ -1,5 +1,5 @@
 local AUTHOR  = "DuckAfire"
-local VERSION = "1.1"
+local VERSION = "1.2"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -38,27 +38,36 @@ local LICENSE = [[
 
 ----- TO PRINT FUNCTION -----
 
-local function lenght( word, Break, fixed, size, small )
-	local lines   = type( Break ) ~= "table" and Break or Break[1] or Break.lines or 1
-	local spLines = Break[2] or Break.spaces or 5
-	local ifSmall = small and #word * 2 or 0
-	local ifFixed = 0
+local function lenght( word, lines, fixed, size, small )
+	-- X
+	local scale = print( word, 0, 136, fixed, size )
+	
+	scale = small and scale - #word * 2 or scale
 	
 	if fixed then
 		for i = 1, #word do
-			if string.sub( word, i, i ) == " " then
-				ifFixed = ifFixed + 2
+			local add = 0
+			local letter = string.sub( word, i, i )
+			
+			if 	   string.match( letter, '[%"%+%-%_%=%<%>%?%{%}%~]' ) or letter == " " or letter == "'" then   add = 2
+			elseif string.match( letter, '[%!%.%,%(%)%:%;%[%]]' ) then   add = 3
+			elseif letter == "|" then   add = 4
 			end
+			
+			scale = scale + add
 		end
 	end
+
+	-- Y
+	local lines = lines or 1
 	
-	return print( word, 0, 136, size ) - ifSmall + ifFixed, lines * spLines
+	return scale, 6 * lines
 end
 
 local function center( word, x, y, lines, fixed, size, small )
 	local width, height = lenght( word, lines, fixed, size, small )
 	
-	return x - width // 2, y - height // 2
+	return x - width // 2 + 1, y - height // 2 + 1
 end
 
 local function list( text, x, y, color, space, fixed, size, small )

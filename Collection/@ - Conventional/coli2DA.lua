@@ -1,5 +1,5 @@
 local AUTHOR  = "DuckAfire"
-local VERSION = "1.6.3"
+local VERSION = "1.6.4"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -154,9 +154,9 @@ end
 local function impactPixel( ... )-- two objects (rect-rect; circ-circ; circ-rect); collision type
 	local temp, typeA, typeB = { ... }
 
-	if     temp[#temp - 1] == "rect" then typeA, typeB = "rect", "rect"-- 
-	elseif temp[#temp - 1] == "circ" then typeA, typeB = "circ", "circ"
-	elseif temp[#temp - 1] == "mix"  then typeA, typeB = "circ", "rect"
+	if     temp[#temp] == "rect" then typeA, typeB = "rect", "rect"-- 
+	elseif temp[#temp] == "circ" then typeA, typeB = "circ", "circ"
+	elseif temp[#temp] == "mix"  then typeA, typeB = "circ", "rect"
 	else error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "mix" (function "coli2DA.impactPixel")' )
 	end
 
