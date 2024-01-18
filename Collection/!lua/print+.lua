@@ -1,5 +1,6 @@
+local NAME    = "print+"
 local AUTHOR  = "DuckAfire"
-local VERSION = "1.2"
+local VERSION = "2.0"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -38,75 +39,104 @@ local LICENSE = [[
 
 ----- TO PRINT FUNCTION -----
 
-local function lenght( word, lines, fixed, size, small )
+local function lenght( text, lines, fixed, size, small )
 	-- X
-	local scale = print( word, 0, 136, fixed, size )
+	assert( type( text ) == "string", '[print+] String (parameter) not specified, in function "pplus.lenght"' )
+		
+	local scale = print( text, 0, 136 )
 	
-	scale = small and scale - #word * 2 or scale
+	scale = small and scale - #text * 2 or scale-- 6x6 in normal font; 4x6 in small font (in most cases)
 	
 	if fixed then
-		for i = 1, #word do
+		for i = 1, #text do
 			local add = 0
-			local letter = string.sub( word, i, i )
+			local cur = string.sub( text, i, i )-- current letter
 			
-			if 	   string.match( letter, '[%"%+%-%_%=%<%>%?%{%}%~]' ) or letter == " " or letter == "'" then   add = 2
-			elseif string.match( letter, '[%!%.%,%(%)%:%;%[%]]' ) then   add = 3
-			elseif letter == "|" then   add = 4
+			if 	   string.match( cur, '[%"%+%-%_%=%<%>%?%{%}%~]' ) or cur == " " or cur == "'" then   add = 2
+			elseif string.match( cur, '[%!%.%,%(%)%:%;%[%]]' ) then   add = 3
+			elseif cur == "|" then   add = 4
 			end
 			
 			scale = scale + add
 		end
 	end
 
+	local size = size or 1
+
 	-- Y
 	local lines = lines or 1
 	
-	return scale, 6 * lines
+	return scale * size, (6 * size) * lines
 end
 
-local function center( word, x, y, lines, fixed, size, small )
-	local width, height = lenght( word, lines, fixed, size, small )
+local function center( text, x, y, lines, fixed, size, small )
+	local x, y = x or 0, y or 0
+	
+	local width, height = lenght( text, lines, fixed, size, small )
 	
 	return x - width // 2 + 1, y - height // 2 + 1
 end
 
 local function list( text, x, y, color, space, fixed, size, small )
-	if type( text ) ~= "table" then error( '[print+] Table (parameter) not expecified (function: "printPlus.queue")' ) end
+
+	assert( type( text ) == "table", '[print+] Table (parameter) not specified, in function "pplus.list"' )
 	
-	local x, y, color, space = x or 0, y or 0, color or 0, space or 10
+	local x, y = x or 0, y or 0
+	local color, space = color or 15, space or 10-- vertical spaces
 	
 	for i = 1, #text do
-		print( text[i], x, y + space * (i - 1), color, fixed, size, small )
+		print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size, small )
 	end
+	
 end
 
 
 
 ----- USE SPRITES -----
 
-local function title( letters, x, y, dimensions, space, size, vertical )
-	if type( letters ) ~= "table" then error( '[print+] Table (parameter) not expecified (function: "printPlus.title" )' ) end
+local function title( sprites, X, Y, dimensions, space, size, chromaKey, vertical )
+	assert( type( sprites ) == "table", '[print+] Table (parameter) not specified, in function "pplus.title"' )
 	
+	local back-- table to store the chromaKey colors
+	
+	if     type( chromaKey ) == "number" then
+		back = {}
+		for i = 1, #sprites do   back[i] = chromaKey   end-- one index to all index in table
+	
+	elseif type( chromaKey ) == "table"  then
+		back = ChromaKey
+		if #back < #sprites then   for i = #back + 1, #sprites do   back[i] = 0   end   end-- populate the table with default (0)
+	
+	else
+		back = {}
+		for i = 1, #sprites do   back[i] = 0   end-- default value (0)
+
+	end
+	
+	-- default values
+	local X, Y = X or 0, Y or 0
 	local dimensions = dimensions or 8
 	local space		 = space 	  or 1
 	local size		 = size  	  or 1
 	
-	for i = 1, #letters do
-		local x = x + (dimensions + space) * ( i - 1 )
-		local y = y
+	for i = 1, #sprites do
+		local x, y
 		
 		if vertical then
-			x = x
-			y = y + (dimensions + space) * ( i - 1 )
+			x = X
+			y = Y + (dimensions + space) * ( i - 1 )
+		else
+			x = X + (dimensions + space) * ( i - 1 )
+			y = Y
 		end
 		
-		spr( letters[ i ], x, y, 0, size )
+		spr( sprites[i], x, y, back[i], size )
 	end
 	
 end
-	
-	
-	
+
+
+
 -- ADD TO TABLE -------------------------------------------------------------
 	
 local printPlus = {}
