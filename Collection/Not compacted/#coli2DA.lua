@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.6.4]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.0]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -10,31 +10,36 @@ do
 		local body = { x = x or 0, y = y or 0 }
 		
 		if     Type == "rect" then
-			body.width  = width_radius or 0
-			body.height = height or 0
+			body.width  = width_radius or 8
+			body.height = height or 8
 		elseif Type == "circ" then
-			body.radius = width_radius or 0
+			body.radius = width_radius or 4
 		elseif Type ~= "simp" then
-			error( '[coli2DA] The parameter "Type" is invalid, try "rect" or "circ" (function: "coli2DA.newBody")' ) 
+			error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "simp". In function "coli.newBody".' ) 
 		end
 		
 		return body
 	end
 
-	local function checkBodies( par, types )-- all parameters; type of bodies(max: 2)
-		local id, bodies, lastPar = 1, { {}, {} }, 0-- "lastPar" store the position (id) of last parameter, used in a body, more one.
+	local function checkBodies( par, types )-- (table) all parameters; (table) type of bodies(max: 2)
+		local id      = 1		  -- index of current parameter
+		local bodies  = { {}, {} }-- final bodies
+		local lastPar = 0		  -- store the position (id) of last parameter, used in a body, more one.
 		
 		for i = 1, #types do
 			local adj = types[i] == "circ" and 1 or types[i] == "simp" and 2 or 0-- ADJust parameters indexs (id and lastPar)
 			local cur = par[ id ]-- CURrent parameter to check
-			local res = 0-- result of conditions
+			local res = 0-- RESult of conditions
 
-			if type( cur ) == "table" then-- 1, 2 (0)
+			if type( cur ) == "table" then-- res = 1, 2 (0)
 				if cur.x then   bodies[i] = cur   else   bodies[i] = newBody( types[i], cur[1], cur[2], cur[3], cur[4] )   end
 				lastPar = lastPar + 1
-			else-- 3
-				res, bodies[i] = 3, newBody( types[i], par[id], par[id + 1], par[id + 2], par[id + 3] )
+
+			else-- res = 3
+				bodies[i] = newBody( types[i], par[id], par[id + 1], par[id + 2], par[id + 3] )
+				res = 3
 				lastPar = lastPar + 4 - adj
+
 			end
 			
 			-- update "id" to check the next parameter
@@ -47,15 +52,19 @@ do
 
 	----- GEOGRAFY AND MATHEMATICS -----
 
-	local function distance( ... )-- two simp object
+	local function distance( ... )-- two any bodies
 		local objA, objB = checkBodies( { ... }, { "simp", "simp" } )
 		return math.sqrt( ( objA.x - objB.x ) ^ 2 + ( objA.y - objB.y ) ^ 2 )
 	end
 	
-	local function mapAlign( ... )-- two rect object; boolean
-		local par = { ... }
-		if type(par[1]) ~= "table" and #par < 4 then error( '[coli2DA] Parameters not expecified in table "mapAlign".' ) end-- check if the values "width" and "height" exist, in format: func( 10, 10, 10, 10, (false/true) )
-		local obj, _, par, lastPar = checkBodies( par, { "rect" } )
+	local function mapAlign( ... )-- one rect object; boolean
+		local Par      = { ... }
+		local bodyType = (type( Par[1] ) == "table" or (type( Par[1] ) ~= "table" and #Par >= 4)) and "rect" or "simp"
+		
+		-- if the format is: func( x, y, onCenter )
+		if type( Par[1] ) ~= "table" and #Par < 2 then error( '[coli2DA] Insufficient parameters for this call format. In function "coli.mapAlign".' ) end
+		
+		local obj, _, par, lastPar = checkBodies( Par, { bodyType } )
 		
 		local x, y = obj.x, obj.y
 		
@@ -71,7 +80,7 @@ do
 
 	----- MAP -----
 
-	local function tile( ... )-- rect object; type; id flag (optional)
+	local function tile( ... )-- one rect body; collision side; id flag
 		local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
 		
 		local w, h, flagID = obj.width, obj.height, par[ lastPar + 1 ] or 0
@@ -81,43 +90,46 @@ do
 		elseif par[ lastPar ] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
 		elseif par[ lastPar ] == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
 		elseif par[ lastPar ] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
-		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right" (function: "coli2DA.tile")' ) end
+		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right". In function: "coli.tile".' ) end
 		
 		return fget( mget( (obj.x + x1) // 8, (obj.y + y1) // 8), flagID ) and-- 1
 			   fget( mget( (obj.x + x2) // 8, (obj.y + y2) // 8), flagID )	-- 2
 	end
 
-	local function tileCross( ... )-- rect object; bollean
+	local function tileCross( ... )-- rect object; table; bollean
 		local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
-		return par[ lastPar ] and { top = tile( obj, "top" ), below = tile( obj, "below" ), left = tile( obj, "left" ), right = tile( obj, "right" ) } or
-								  { 	  tile( obj, "top" ), 		  tile( obj, "below" ), 	   tile( obj, "left" ), 		tile( obj, "right" ) }
+		
+		local flag = type( par[ lastPar + 1 ] ) == "table" and par[ lastPar + 1 ] or {}
+		for i = 1, 4 do   if not flag[i] or type( flag[i] ) ~= "number" then   flag[i] = type( par[ lastPar + 1 ] ) == "number" and par[ lastPar + 1 ] or 0   end   end
+		
+		return par[ lastPar ] and { top = tile( obj, "top", flag[1] ), below = tile( obj, "below", flag[2] ), left = tile( obj, "left", flag[3] ), right = tile( obj, "right", flag[4] ) } or
+								  { [0] = tile( obj, "top", flag[1] ), 		   tile( obj, "below", flag[2] ), 	     tile( obj, "left", flag[3] ), 		   tile( obj, "right", flag[4] ) }
 	end
 
 	----- CURSOR / TOUCH -----
 
-	local function touch( ... )-- two rect object (2st is optional)
-		local obj, cursor = checkBodies( { ... }, { "rect", "rect" } )
-		
+	local function touch( initX, initY, finalX, finalY, dimensions )-- cursor dimensions
+		local cursor = {}
 		cursor.x, cursor.y = mouse()
 		
-		cursor.width  = cursor.width  and math.abs( cursor.width  ) or 1-- only positive values
-		cursor.height = cursor.height and math.abs( cursor.height ) or 1
+		cursor.width  = dimensions.width  and math.abs( dimensions.width  ) or dimensions[1] and math.abs( dimensions[1] ) or 1-- only positive values
+		cursor.height = dimensions.height and math.abs( dimensions.height ) or dimensions[2] and math.abs( dimensions[2] ) or 1
 		
-		return cursor.x + cursor.width  - 1 >= obj.x					  and
-			   cursor.x						<= obj.x + obj.width  - obj.x and
-			   cursor.y + cursor.height - 1 >= obj.y					  and
-			   cursor.y						<= obj.y + obj.height - obj.y
+		return cursor.x + cursor.width  - 1 >= initX  and-- adjust the cursor dimensions
+			   cursor.x						<= finalX and
+			   cursor.y + cursor.height - 1 >= initY  and
+			   cursor.y						<= finalY
 	end
 	
 	----- POINT OF IMPACT -----
 
-	local function impactPixel( ... )-- two objects (rect-rect; circ-circ; circ-rect); collision type
+	local function impactPixel( ... )-- two any bodies; collision type
 		local temp, typeA, typeB = { ... }
 	
-		if     temp[#temp] == "rect" then typeA, typeB = "rect", "rect"-- 
+		if     temp[#temp] == "rect" then typeA, typeB = "rect", "rect"
 		elseif temp[#temp] == "circ" then typeA, typeB = "circ", "circ"
 		elseif temp[#temp] == "mix"  then typeA, typeB = "circ", "rect"
-		else error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "mix" (function "coli2DA.impactPixel")' )
+		else error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "mix". In function "coli.impactPixel."' )
 		end
 	
 		local mixA, mixB, par, lastPar = checkBodies( temp, { typeA, typeB } )
@@ -125,7 +137,7 @@ do
 		if 	   par[ lastPar ] == "rect" then
 			local newMixA = {   x = mixA.x + mixA.width / 2,   y = mixA.y + mixA.height / 2,   radius = (mixA.width + mixA.height) / 2   }
 			local newMixB = {   x = mixB.x + mixB.width / 2,   y = mixB.y + mixB.height / 2,   radius = (mixB.width + mixB.height) / 2   }
-			return impactPixel( newMixA, newMixB, "circ" )-- "tranform" all in circles
+			return impactPixel( newMixA, newMixB, "circ" )-- "tranform" all in circles 0o0
 		
 		elseif par[ lastPar ] == "circ" then
 			local x = (mixA.x * mixB.radius) + (mixB.x * mixA.radius)
@@ -142,8 +154,8 @@ do
 			
 			local Rect = {   top = mixB.x,   below = mixB.y + mixB.height - 1,   left = mixB.y,   right = mixB.y + mixB.width - 1   }
 		
-			if Circ.x <= Rect.left then   x = Rect.left   elseif Circ.x > Rect.right then   x = Rect.right   else   x = Circ.x   end
-			if Circ.y <= Rect.top  then   y = Rect.top    elseif Circ.y > Rect.below then   y = Rect.below   else   y = Circ.y   end
+			if Circ.x < Rect.left then   x = Rect.left   elseif Circ.x > Rect.right then   x = Rect.right   else   x = Circ.x   end
+			if Circ.y < Rect.top  then   y = Rect.top    elseif Circ.y > Rect.below then   y = Rect.below   else   y = Circ.y   end
 		
 			return x, y
 		
@@ -152,14 +164,14 @@ do
 
 	----- SHAPES IMPACT -----
 
-	local function rectangle( ... )-- two rect object
+	local function rectangle( ... )-- two rect bodies
 		local rectA, rectB = checkBodies( { ... }, { "rect", "rect" } )
 	
 		local rectAW, rectAH = rectA.width or 1, rectA.height or 1--default is zero
 		local rectBW, rectBH = rectB.width or 1, rectB.height or 1
 		
-		rectAW, rectAH = math.abs(rectAW) - 1, math.abs(rectAH) - 1-- only positive numbers
-		rectBW, rectBH = math.abs(rectBW) - 1, math.abs(rectBH) - 1
+		rectAW, rectAH = math.abs( rectAW ) - 1, math.abs( rectAH ) - 1-- only positive numbers
+		rectBW, rectBH = math.abs( rectBW ) - 1, math.abs( rectBH ) - 1
 		
 		return rectA.x + rectAW >= rectB.x			and
 			   rectA.x			<= rectB.x + rectBW and
@@ -167,7 +179,7 @@ do
 			   rectA.y			<= rectB.y + rectBH
 	end
 
-	local function circle( ... )
+	local function circle( ... )-- tow circ bodies; boolean (if there are two circle)
 		local circleA, circleB, par, lastPar = checkBodies( { ... }, { "circ", "circ" } )
 		
 		local totalRadius = par[ lastPar ] and circleA.radius + circleB.radius or circleB.radius
@@ -180,7 +192,6 @@ do
 	
 		local tempCircle = {}
 		
-		tempCircle.radius = 0
 		tempCircle.x, tempCircle.y = impactPixel( Circ, Rect, "mix" )-- "transform" the rectangle in a circle
 
 		return circle( tempCircle, Circ )-- collision between Circ and Rect (now is a "circle")
@@ -203,4 +214,6 @@ end
 
 local coli = coli2DA -- library reference
 
--- NOTE: in functions ".shapeMix" and ".impactPixel"(in mode "mix"), only the "circle" can move, because moving the "square/rectangle" will generate unexpected results.
+-- NOTES:
+---- In functions "shapeMix" and "impactPixel" (using "mix"), only the "circ" can move, because moving the "rect" will generate unexpected results.
+---- In function "impactPixel" (using "rect"), if any of the bodies is a rectangle with a large difference in size between its pairs of sides (e.g., 5x30), the returned result may is incorrect.
