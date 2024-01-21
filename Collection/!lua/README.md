@@ -1,5 +1,5 @@
 # Does the Tic80 have support for external libraries?
-If you have ever tried to access a library file in Tic80, using, for example, "require" (in LUA),
+If you have ever tried to access a library file in Tic80, using, for example, `require` (in LUA),
 you must have received a huge error and thought that Tic80 does not support the use of external
 libraries, but that is not the case.
 
@@ -24,24 +24,3 @@ as there is no way to send extra files, so it ends up being better to use "inter
 Exported cartridges (in ".exe" for example) look for the libraries required by their code in the same way as the Tic80,
 that is, if you export a cartridge, you will need to maintain a folder called "lua" (containing the libraries that the
 cartridge uses) in your directory.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-* ###### [Fonte](https://github.com/nesbox/TIC-80/wiki/Using-require-to-load-external-code-into-your-cart "Tic80 Wiki")
-
-![folder-lua](https://github.com/duckafire/TinyLibrary/assets/155199080/5219f3af-9a5c-4b04-a0c4-2c75611f3b21)
-![using-require-on-tic80](https://github.com/duckafire/TinyLibrary/assets/155199080/cb8fb07b-0cba-477c-be35-a536cfb8a846)
