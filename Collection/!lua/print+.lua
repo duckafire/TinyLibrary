@@ -1,6 +1,6 @@
 local NAME    = "print+"
 local AUTHOR  = "DuckAfire"
-local VERSION = "2.0"
+local VERSION = "2.1"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -85,7 +85,7 @@ local function list( text, x, y, color, space, fixed, size, small )
 	local color, space = color or 15, space or 10-- vertical spaces
 	
 	for i = 1, #text do
-		print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size, small )
+		print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size or 1, small )
 	end
 	
 end

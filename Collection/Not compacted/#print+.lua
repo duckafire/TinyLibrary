@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.0]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.1]
 
 local printPlus = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -53,7 +53,7 @@ do
 		local color, space = color or 15, space or 10-- vertical spaces
 		
 		for i = 1, #text do
-			print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size, small )
+			print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size or 1, small )
 		end
 		
 	end
