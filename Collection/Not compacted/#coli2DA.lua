@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.0]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.1]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -109,7 +109,7 @@ do
 	----- CURSOR / TOUCH -----
 
 	local function touch( initX, initY, finalX, finalY, dimensions )-- cursor dimensions
-		local cursor = {}
+		local cursor, dimensions = {}, dimensions or {}
 		cursor.x, cursor.y = mouse()
 		
 		cursor.width  = dimensions.width  and math.abs( dimensions.width  ) or dimensions[1] and math.abs( dimensions[1] ) or 1-- only positive values

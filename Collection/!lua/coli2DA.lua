@@ -1,6 +1,6 @@
 local NAME    = "coli2DA"
 local AUTHOR  = "DuckAfire"
-local VERSION = "2.0"
+local VERSION = "2.1"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -148,7 +148,7 @@ end
 ----- CURSOR / TOUCH -----
 
 local function touch( initX, initY, finalX, finalY, dimensions )-- cursor dimensions
-	local cursor = {}
+	local cursor, dimensions = {}, dimensions or {}
 	cursor.x, cursor.y = mouse()
 	
 	cursor.width  = dimensions.width  and math.abs( dimensions.width  ) or dimensions[1] and math.abs( dimensions[1] ) or 1-- only positive values
