@@ -207,25 +207,29 @@ end
 
 ----- SHAPES IMPACT -----
 
-local function rectangle( ... )-- two rect bodies
-	local rectA, rectB = checkBodies( { ... }, { "rect", "rect" } )
+local function rectangle( ... )-- two rect bodies; boolean
+	local temp  = { ... }
+	local isOne = type( temp[ #temp ] ) == "boolean" and temp[ #temp ] or false
+	local typeA = isOne and "simp" or "rect"
 
-	local rectAW, rectAH = rectA.width or 1, rectA.height or 1--default is zero
-	local rectBW, rectBH = rectB.width or 1, rectB.height or 1
+	local rectA, rectB = checkBodies( temp, { typeA, "rect" } )
 	
-	rectAW, rectAH = math.abs( rectAW ) - 1, math.abs( rectAH ) - 1-- only positive numbers
-	rectBW, rectBH = math.abs( rectBW ) - 1, math.abs( rectBH ) - 1
+	if isOne then rectA.width, rectA.height = 1, 1 end
 	
-	return rectA.x + rectAW >= rectB.x			and
-		   rectA.x			<= rectB.x + rectBW and
-		   rectA.y + rectAH >= rectB.y			and
-		   rectA.y			<= rectB.y + rectBH
+	return rectA.x + rectA.width  - 1 >= rectB.x				    and
+		   rectA.x					  <= rectB.x + rectB.width  - 1 and
+		   rectA.y + rectA.height - 1 >= rectB.y				    and
+		   rectA.y					  <= rectB.y + rectB.height - 1
 end
 
-local function circle( ... )-- tow circ bodies; boolean (if there are two circle)
-	local circleA, circleB, par, lastPar = checkBodies( { ... }, { "circ", "circ" } )
+local function circle( ... )-- two circ bodies; boolean
+	local temp  = { ... }
+	local isOne = type( temp[ #temp ] ) == "boolean" and temp[ #temp ] or false
+	local typeA = isOne and "simp" or "circ"
+
+	local circleA, circleB = checkBodies( temp, { typeA, "circ" } )
 	
-	local totalRadius = par[ lastPar ] and circleA.radius + circleB.radius or circleB.radius
+	local totalRadius = isOne and circleB.radius or circleA.radius + circleB.radius
 	
 	return ( circleA.x - circleB.x ) ^ 2 + ( circleA.y - circleB.y ) ^ 2 <= totalRadius ^ 2
 end
