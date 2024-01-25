@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.1]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.2]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -83,8 +83,12 @@ do
 	local function tile( ... )-- one rect body; collision side; id flag
 		local obj, _, par, lastPar = checkBodies( { ... }, { "rect" } )
 		
-		local w, h, flagID = obj.width, obj.height, par[ lastPar + 1 ] or 0
+		local w, h, flagID = obj.width, obj.height
 		local x1, y1, x2, y2-- to add XY
+		
+		local flagID = par[ lastPar + 1 ] or 0
+		local extraX = par[ lastPar + 2 ] or 0
+		local extraY = par[ lastPar + 3 ] or 0
 		
 		if     par[ lastPar ] == "top"   then x1, y1, x2, y2 =  0, -1,  w - 1, -1
 		elseif par[ lastPar ] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
@@ -92,8 +96,8 @@ do
 		elseif par[ lastPar ] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
 		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right". In function: "coli.tile".' ) end
 		
-		return fget( mget( (obj.x + x1) // 8, (obj.y + y1) // 8), flagID ) and-- 1
-			   fget( mget( (obj.x + x2) // 8, (obj.y + y2) // 8), flagID )	-- 2
+		return fget( mget( (obj.x + x1 + extraX) // 8, (obj.y + y1) // 8 + extraY), flagID ) and-- 1
+			   fget( mget( (obj.x + x2 + extraX) // 8, (obj.y + y2) // 8 + extraY), flagID )	-- 2
 	end
 
 	local function tileCross( ... )-- rect object; table; bollean
@@ -102,8 +106,14 @@ do
 		local flag = type( par[ lastPar + 1 ] ) == "table" and par[ lastPar + 1 ] or {}
 		for i = 1, 4 do   if not flag[i] or type( flag[i] ) ~= "number" then   flag[i] = type( par[ lastPar + 1 ] ) == "number" and par[ lastPar + 1 ] or 0   end   end
 		
-		return par[ lastPar ] and { top = tile( obj, "top", flag[1] ), below = tile( obj, "below", flag[2] ), left = tile( obj, "left", flag[3] ), right = tile( obj, "right", flag[4] ) } or
-								  { [0] = tile( obj, "top", flag[1] ), 		   tile( obj, "below", flag[2] ), 	     tile( obj, "left", flag[3] ), 		   tile( obj, "right", flag[4] ) }
+		-- extra values to adjust map position
+		local a, b = par[ lastPar + 2 ], par[ lastPar + 3 ]
+		
+		local values = {}-- values
+		local tag = { [0] = "top", "below", "left", "right" }
+		for i = 0, 3 do values[i] = tile( obj, tag[i], flag[ i + 1 ], a, b ) end
+		
+		return par[ lastPar ] and { top = values[0], below = value[1], left = value[2], right = value[3] } or value
 	end
 
 	----- CURSOR / TOUCH -----
