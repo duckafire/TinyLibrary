@@ -96,8 +96,8 @@ do
 		elseif par[ lastPar ] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
 		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right". In function: "coli.tile".' ) end
 		
-		return fget( mget( (obj.x + x1 + extraX) // 8, (obj.y + y1) // 8 + extraY), flagID ) and-- 1
-			   fget( mget( (obj.x + x2 + extraX) // 8, (obj.y + y2) // 8 + extraY), flagID )	-- 2
+		return fget( mget( (obj.x + x1) // 8 + extraX, (obj.y + y1) // 8 + extraY), flagID ) and-- 1
+			   fget( mget( (obj.x + x2) // 8 + extraX, (obj.y + y2) // 8 + extraY), flagID )	-- 2
 	end
 
 	local function tileCross( ... )-- rect object; table; bollean
