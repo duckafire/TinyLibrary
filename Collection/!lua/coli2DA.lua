@@ -1,6 +1,6 @@
 local NAME    = "coli2DA"
 local AUTHOR  = "DuckAfire"
-local VERSION = "2.2"
+local VERSION = "2.3"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -175,15 +175,11 @@ end
 ----- POINT OF IMPACT -----
 
 local function impactPixel( ... )-- two any bodies; collision type
-	local temp, typeA, typeB = { ... }
+	local temp = { ... }
 
-	if     temp[#temp] == "rect" then typeA, typeB = "rect", "rect"
-	elseif temp[#temp] == "circ" then typeA, typeB = "circ", "circ"
-	elseif temp[#temp] == "mix"  then typeA, typeB = "circ", "rect"
-	else error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "mix". In function "coli.impactPixel."' )
-	end
+	if temp[#temp] ~= "rect" and temp[#temp] ~= "circ" then error( '[coli2DA] The parameter "Type" is invalid, try "rect" or "circ". In function "coli.impactPixel."' ) end
 
-	local mixA, mixB, par, lastPar = checkBodies( temp, { typeA, typeB } )
+	local mixA, mixB, par, lastPar = checkBodies( temp, { temp[#temp], temp[#temp] } )
 
 	if 	   par[ lastPar ] == "rect" then
 		local newMixA = {   x = mixA.x + mixA.width / 2,   y = mixA.y + mixA.height / 2,   radius = (mixA.width + mixA.height) / 2   }
@@ -197,19 +193,7 @@ local function impactPixel( ... )-- two any bodies; collision type
 		local totalRadius = (mixA.radius + mixB.radius)
 	
 		return x / totalRadius, y / totalRadius
-	
-	elseif par[ lastPar ] == "mix"  then
-		local x, y
 		
-		local Circ = {   x = mixA.x,   y = mixA.y,   radius = mixA.radius   }
-		
-		local Rect = {   top = mixB.x,   below = mixB.y + mixB.height - 1,   left = mixB.y,   right = mixB.y + mixB.width - 1   }
-	
-		if Circ.x < Rect.left then   x = Rect.left   elseif Circ.x > Rect.right then   x = Rect.right   else   x = Circ.x   end
-		if Circ.y < Rect.top  then   y = Rect.top    elseif Circ.y > Rect.below then   y = Rect.below   else   y = Circ.y   end
-	
-		return x, y
-	
 	end
 end
 
@@ -246,12 +230,13 @@ end
 
 local function shapesMix( ... )-- circ and rect object
 	local Circ, Rect = checkBodies( { ... }, { "circ", "rect" } )
-
-	local tempCircle = {}
 	
-	tempCircle.x, tempCircle.y = impactPixel( Circ, Rect, "mix" )-- "transform" the rectangle in a circle
-
-	return circle( tempCircle, Circ )-- collision between Circ and Rect (now is a "circle")
+	-- transform the circle in a square/rect body
+	local square = newBody("rect", Circ.x - Circ.radius, Circ.y - Circ.radius, Circ.radius * 2 + 1, Circ.radius * 2 + 1)
+	
+	local x, y = impactPixel(Rect, square, "rect")
+	
+	return rectangle({x, y}, Rect, true) or circle({x, y}, Circ, true)
 end
 
 
@@ -274,5 +259,4 @@ coli2DA.shapeMix 	= shapeMix
 return coli2DA
 
 -- NOTES:
----- In functions "shapeMix" and "impactPixel" (using "mix"), only the "circ" can move, because moving the "rect" will generate unexpected results.
 ---- In function "impactPixel" (using "rect"), if any of the bodies is a rectangle with a large difference in size between its pairs of sides (e.g., 5x30), the returned result may is incorrect.
