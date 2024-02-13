@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.3]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.4]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -116,6 +116,22 @@ do
 		return par[ lastPar ] and { top = values[0], below = value[1], left = value[2], right = value[3] } or value
 	end
 
+	local function box360(sx, sy, side)-- horizontal speed; vertical speed; collions sides (from "tile", "tileCross" or manually)
+		local topBelow, leftRight
+		
+		if side.top then
+			topBelow  = sy and ((sy < 0 and side.top)  or (sy > 0 and side.below)) or false
+			leftRight = sx and ((sx < 0 and side.left) or (sx > 0 and side.right)) or false
+			
+		else
+			topBelow  = sy and ((sy < 0 and side[0]) or (sy > 0 and side[1])) or false
+			leftRight = sx and ((sx < 0 and side[2]) or (sx > 0 and side[3])) or false
+			
+		end
+		
+		return topBelow or leftRight
+	end
+
 	----- CURSOR / TOUCH -----
 
 	local function touch( initX, initY, finalX, finalY, dimensions )-- cursor dimensions
@@ -211,8 +227,9 @@ do
 	coli2DA.newBody 	= newBody
 	coli2DA.distance 	= distance
 	coli2DA.mapAlign 	= mapAlign
-	coli2DA.tileCross 	= tileCross
 	coli2DA.tile 		= tile
+	coli2DA.tileCross 	= tileCross
+	coli2DA.box360		= box360
 	coli2DA.touch 		= touch
 	coli2DA.impactPixel = impactPixel
 	coli2DA.rectangle 	= rectangle

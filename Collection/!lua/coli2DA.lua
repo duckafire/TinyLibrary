@@ -1,6 +1,6 @@
 local NAME    = "coli2DA"
 local AUTHOR  = "DuckAfire"
-local VERSION = "2.3"
+local VERSION = "2.4"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -153,6 +153,22 @@ local function tileCross( ... )-- rect object; table; bollean
 	return par[ lastPar ] and { top = values[0], below = value[1], left = value[2], right = value[3] } or value
 end
 
+local function box360(sx, sy, side)-- horizontal speed; vertical speed; collions sides (from "tile", "tileCross" or manually)
+	local topBelow, leftRight
+	
+	if side.top then
+		topBelow  = sy and ((sy < 0 and side.top)  or (sy > 0 and side.below)) or false
+		leftRight = sx and ((sx < 0 and side.left) or (sx > 0 and side.right)) or false
+		
+	else
+		topBelow  = sy and ((sy < 0 and side[0]) or (sy > 0 and side[1])) or false
+		leftRight = sx and ((sx < 0 and side[2]) or (sx > 0 and side[3])) or false
+		
+	end
+	
+	return topBelow or leftRight
+end
+
 
 
 ----- CURSOR / TOUCH -----
@@ -248,8 +264,9 @@ local coli2DA = {}
 coli2DA.newBody 	= newBody
 coli2DA.distance 	= distance
 coli2DA.mapAlign 	= mapAlign
-coli2DA.tileCross 	= tileCross
 coli2DA.tile 		= tile
+coli2DA.tileCross 	= tileCross
+coli2DA.box360		= box360
 coli2DA.touch 		= touch
 coli2DA.impactPixel = impactPixel
 coli2DA.rectangle 	= rectangle
