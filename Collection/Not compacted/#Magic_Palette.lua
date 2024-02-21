@@ -6,37 +6,44 @@ local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There
 do
 	----- CONVERSION -----
 
-	local function sortCode(codes, together, hex)-- internal
-		local tg, _codes, c = together or 0, {}-- type of return; colors; to return
+	local function sortCode(code, together, hex, low)-- internal
+		local tg, _code, c = together or 0, {}, nil-- type of return; colors; to return
 		
-		if hex and (type(codes) == "string" or (type(codes) == "table" and type(codes[1]) == "string" and #codes == 1)) then
-			local temp = type(codes) == "table" and codes[1] or codes
+		-- HEXADECIMAL CODE
+		if hex and (type(code) == "string" or (type(code) == "table" and type(code[1]) == "string" and #code == 1)) then
+		
+			local temp = type(code) == "table" and code[1] or code
 			temp = string.sub(temp, 1, 1) == "#" and string.sub(temp, 2) or temp
 			
-			for i = 2, 6 do if #temp == 6 then break end temp = temp.."0" end
-			for i = 1, 3 do local id = {1, 3, 5} _codes[i] = string.upper(string.sub(temp, id[i], id[i] + 1)) end
+			for i = 2, 6 do if #temp == 6 then break end temp = temp.."0" end-- fill void spaces
+			
+			local _font = low and string.lower or string.upper
+			for i = 1, 3 do local id = {1, 3, 5} _code[i] = _font(string.sub(temp, id[i], id[i] + 1)) end
 		
-		else
-			_codes = codes
+		else-- NUMERIC CODE
+			_code = code
 		end
 		
-		for i = 1, 3 do if not _codes[i] then _codes[i] = 0 end end-- to decimal
+		for i = 1, 3 do if not _code[i] then _code[i] = 0 end end-- fill void spaces
 		
-		if tg == 0 then-- 3 arguments to 3 variables
-			return _codes[1], _codes[2], _codes[3]
+		-- RETURN TYPES
+		if tg == 0 then-- 3 arg to 3 var
+			return _code[1], _code[2], _code[3]
 		
 		elseif tg == 1 then-- a array (table)
-			c = _codes
+			c = _code
 		
 		elseif tg == 2 then-- a table with "structure"
-			c = {red = _codes[1], green = _codes[2], blue = _codes[3]}
+			c = {red = _code[1], green = _code[2], blue = _code[3]}
 		
 		elseif tg == 3 then-- string
-			if hex then-- hexadecimal
-				c = "#".._codes[1].._codes[2].._codes[3]
-			else-- decimal
-				c = _codes[1]..", ".._codes[2]..", ".._codes[3]
+			if hex then
+				c = "#".._code[1].._code[2].._code[3]-- hexadecimal
+			else
+				c = _code[1]..", ".._code[2]..", ".._code[3]-- decimal
 			end
+		else
+			error( '[Magic_Palette] The parameter "together" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
 		end
 		
 		return c
@@ -48,12 +55,14 @@ do
 
 	-- ADD TO TABLE -------------------------------------------------------------
 
-	local magicPalette = {}
-
 	magicPalette.sortCode   = sortCode
-	magicPalette.colorToHex = colorToHex
-	magicPalette.colorToDec = colorToDec
+	-- magicPalette.colorToHex = colorToHex
+	-- magicPalette.colorToDec = colorToDec
+	-- magicPalette.swap       = swap (alterar uma cor ou a tabela toda)
+	-- magicPalette.light      = light (alterar tom: escurecer/clarear)
 
 end
 
 local pale = magicPalette
+
+local code, cod2, cod3
