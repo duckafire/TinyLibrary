@@ -1,6 +1,6 @@
 local NAME    = "print+"
 local AUTHOR  = "DuckAfire"
-local VERSION = "2.1"
+local VERSION = "2.2"
 
 local FOLLOW_ME = {
 	Itch     = "http://duckafire.itch.io",
@@ -41,7 +41,7 @@ local LICENSE = [[
 
 local function lenght( text, lines, fixed, size, small )
 	-- X
-	assert( type( text ) == "string", '[print+] String (parameter) not specified, in function "pplus.lenght"' )
+	assert( type( text ) == "string", '[print+] String (parameter) not specified. In function "pplus.lenght", argument #1' )
 		
 	local scale = print( text, 0, 136 )
 	
@@ -79,7 +79,7 @@ end
 
 local function list( text, x, y, color, space, fixed, size, small )
 
-	assert( type( text ) == "table", '[print+] Table (parameter) not specified, in function "pplus.list"' )
+	assert( type( text ) == "table", '[print+] Table (parameter) not specified. In function "pplus.list", argument #1' )
 	
 	local x, y = x or 0, y or 0
 	local color, space = color or 15, space or 10-- vertical spaces
@@ -95,7 +95,7 @@ end
 ----- USE SPRITES -----
 
 local function title( sprites, X, Y, dimensions, space, size, chromaKey, vertical )
-	assert( type( sprites ) == "table", '[print+] Table (parameter) not specified, in function "pplus.title"' )
+	assert( type( sprites ) == "table", '[print+] Table (parameter) not specified. In function "pplus.title", argument #1' )
 	
 	local back-- table to store the chromaKey colors
 	

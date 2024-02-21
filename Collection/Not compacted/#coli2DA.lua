@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.4]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.5]
 
 local coli2DA = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -15,7 +15,7 @@ do
 		elseif Type == "circ" then
 			body.radius = width_radius or 4
 		elseif Type ~= "simp" then
-			error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "simp". In function "coli.newBody".' ) 
+			error( '[coli2DA] The parameter "Type" is invalid, try "rect", "circ" or "simp". In function "coli.newBody", argument #1.' ) 
 		end
 		
 		return body
@@ -62,7 +62,7 @@ do
 		local bodyType = (type( Par[1] ) == "table" or (type( Par[1] ) ~= "table" and #Par >= 4)) and "rect" or "simp"
 		
 		-- if the format is: func( x, y, onCenter )
-		if type( Par[1] ) ~= "table" and #Par < 2 then error( '[coli2DA] Insufficient parameters for this call format. In function "coli.mapAlign".' ) end
+		if type( Par[1] ) ~= "table" and #Par < 2 then error( '[coli2DA] Insufficient parameters for this call format. In function "coli.mapAlign", argument #(quantity).' ) end
 		
 		local obj, _, par, lastPar = checkBodies( Par, { bodyType } )
 		
@@ -94,7 +94,7 @@ do
 		elseif par[ lastPar ] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
 		elseif par[ lastPar ] == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
 		elseif par[ lastPar ] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
-		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right". In function: "coli.tile".' ) end
+		else error( '[coli2DA] The parameter "Type" is invalid, try "top", "below", "left" or "right". In function: "coli.tile", argument #(last).' ) end
 		
 		return fget( mget( (obj.x + x1) // 8 + extraX, (obj.y + y1) // 8 + extraY), flagID ) and-- 1
 			   fget( mget( (obj.x + x2) // 8 + extraX, (obj.y + y2) // 8 + extraY), flagID )	-- 2
@@ -152,7 +152,7 @@ do
 	local function impactPixel( ... )-- two any bodies; collision type
 		local temp = { ... }
 	
-		if temp[#temp] ~= "rect" and temp[#temp] ~= "circ" then error( '[coli2DA] The parameter "Type" is invalid, try "rect" or "circ". In function "coli.impactPixel."' ) end
+		if temp[#temp] ~= "rect" and temp[#temp] ~= "circ" then error( '[coli2DA] The parameter "Type" is invalid, try "rect" or "circ". In function "coli.impactPixel, argument #(last)."' ) end
 	
 		local mixA, mixB, par, lastPar = checkBodies( temp, { temp[#temp], temp[#temp] } )
 	
