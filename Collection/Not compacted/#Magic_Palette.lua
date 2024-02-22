@@ -6,8 +6,8 @@ local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There
 do
 	----- CONVERSION -----
 
-	local function sortCode(code, together, hex, low)-- internal
-		local tg, _code, c = together or 0, {}, nil-- type of return; colors; to return
+	local function sortCode(code, order, hex, low)-- internal
+		local ord, _code, c = order or 0, {}, nil-- type of return; colors; to return
 		
 		-- HEXADECIMAL CODE
 		if hex and (type(code) == "string" or (type(code) == "table" and type(code[1]) == "string" and #code == 1)) then
@@ -27,26 +27,67 @@ do
 		for i = 1, 3 do if not _code[i] then _code[i] = 0 end end-- fill void spaces
 		
 		-- RETURN TYPES
-		if tg == 0 then-- 3 arg to 3 var
+		if ord == 0 then-- 3 arg to 3 var
 			return _code[1], _code[2], _code[3]
 		
-		elseif tg == 1 then-- a array (table)
+		elseif ord == 1 then-- a array (table)
 			c = _code
 		
-		elseif tg == 2 then-- a table with "structure"
+		elseif ord == 2 then-- a table with "structure"
 			c = {red = _code[1], green = _code[2], blue = _code[3]}
 		
-		elseif tg == 3 then-- string
+		elseif ord == 3 then-- string
 			if hex then
 				c = "#".._code[1].._code[2].._code[3]-- hexadecimal
 			else
 				c = _code[1]..", ".._code[2]..", ".._code[3]-- decimal
 			end
 		else
-			error( '[Magic_Palette] The parameter "together" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
+			error( '[ Magic_Palette ] The parameter "together" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
 		end
 		
 		return c
+	end
+	
+	local function toDec(_code, order)
+		local color, inDeci = {["A"] = 10, ["B"] = 11, ["C"] = 12, ["D"] = 13, ["E"] = 14, ["F"] = 15}, {}
+		
+		local code
+		code = type(_code) == "table" and _code[1] or _code
+		code = string.sub(code, 1, 1) == "#" and string.sub(code, 2) or code-- remove "#"
+		
+		for i = 0, 4, 2 do
+			local a = string.sub(code, i + 1, i + 1)
+			local b = string.sub(code, i + 2, i + 2)
+			
+			-- 0 - 9 ; A - F
+			if tonumber(a) then a = a * 16 else a = color[a] * 16 end
+			if tonumber(b) then a = a + b  else a = color[b] + a  end
+			
+			inDeci[i // 2 + 1] = (a == 256) and a - 1 or a
+		end
+		
+		return sortCode(inDeci, order)
+		
+	end
+	
+	local function toHex(_code, order, low)
+		local color, inHexa = {[10] = "A", [11] = "B", [12] = "C", [13] = "D", [14] = "E", [15] = "F"}, ""
+		
+		for i = 1, 3 do
+			assert(_code[i] < 256, '[ Magic_Palette ] Index very long in "_code" parameter. In function "pale.toHex", argument #1, index #'..i..'.')
+		
+			local a = _code[i] // 16
+			local b = _code[i] %  16
+			
+			-- 0 - 9 ; A - F
+			if a < 10 then a = tostring(a) else a = color[a] end
+			if b < 10 then b = tostring(b) else b = color[b] end
+			
+			inHexa = inHexa..a..b
+		end
+		
+		return sortCode(inHexa, order, true, low)
 	end
 	
 	-- alterar um cor da palete (editColor): índice da cor, tabela com o código da cor, valor booleano (true para usar valores decimais).
@@ -55,14 +96,12 @@ do
 
 	-- ADD TO TABLE -------------------------------------------------------------
 
-	magicPalette.sortCode   = sortCode
-	-- magicPalette.colorToHex = colorToHex
-	-- magicPalette.colorToDec = colorToDec
-	-- magicPalette.swap       = swap (alterar uma cor ou a tabela toda)
-	-- magicPalette.light      = light (alterar tom: escurecer/clarear)
+	magicPalette.sortCode = sortCode
+	magicPalette.toHex    = toHex
+	magicPalette.toDec    = toDec
+	-- magicPalette.swap     = swap (alterar uma cor ou a tabela toda)
+	-- magicPalette.light    = light (alterar tom: escurecer/clarear)
 
 end
 
 local pale = magicPalette
-
-local code, cod2, cod3
