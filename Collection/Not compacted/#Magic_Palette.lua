@@ -89,18 +89,17 @@ do
 		
 		return sortCode(inHexa, order, true, low)
 	end
-	
-	-- alterar um cor da palete (editColor): índice da cor, tabela com o código da cor, valor booleano (true para usar valores decimais).
-	-- trocar toda a paleta (swapPalette): código RBG hexadecimal da paleta (de todas a cores/para toda a tabela).
-	-- alterar o tom (escurecer/clarear) de todas as cores da paleta (light): velocidade do desgaste (em tics), booleano (true para escurecer), index de um cor para alterar apenas ela (-1 por padrão), ciclo (0, padrão, para finalisar no teto/piso; 1 para realizar um "vai e vem"; 2 para um "ciclo bruto")
 
+	local function swap(id, code) end -- id = "0" - "15" or "all"
+	local function light(id, speed, less, duration) end
+	
 	-- ADD TO TABLE -------------------------------------------------------------
 
 	magicPalette.sortCode = sortCode
 	magicPalette.toHex    = toHex
 	magicPalette.toDec    = toDec
-	-- magicPalette.swap     = swap (alterar uma cor ou a tabela toda)
-	-- magicPalette.light    = light (alterar tom: escurecer/clarear)
+	-- magicPalette.swap     = swap
+	-- magicPalette.light    = light
 
 end
 
