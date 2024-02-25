@@ -50,41 +50,29 @@ do
 	end
 	
 	local function toDec(_code, order)
-		local color, inDeci = {["A"] = 10, ["B"] = 11, ["C"] = 12, ["D"] = 13, ["E"] = 14, ["F"] = 15}, {}
+		local inDeci = {}
 		
 		local code
 		code = type(_code) == "table" and _code[1] or _code
 		code = string.sub(code, 1, 1) == "#" and string.sub(code, 2) or code-- remove "#"
 		
-		for i = 0, 4, 2 do
-			local a = string.sub(code, i + 1, i + 1)
-			local b = string.sub(code, i + 2, i + 2)
-			
-			-- 0 - 9 ; A - F
-			if tonumber(a) then a = a * 16 else a = color[a] * 16 end
-			if tonumber(b) then a = a + b  else a = color[b] + a  end
-			
-			inDeci[i // 2 + 1] = (a == 256) and a - 1 or a
+		for i = 0, 2 do
+			local lcl = i + 1 + (i * 1)-- LoCaLe
+			inDeci[i + 1] = tonumber(string.sub(code, lcl, lcl + 1), 16)
 		end
 		
 		return sortCode(inDeci, order)
-		
 	end
 	
 	local function toHex(_code, order, low)
-		local color, inHexa = {[10] = "A", [11] = "B", [12] = "C", [13] = "D", [14] = "E", [15] = "F"}, ""
+		local inHexa = ""
 		
 		for i = 1, 3 do
-			assert(_code[i] < 256, '[ Magic_Palette ] Index very long in "_code" parameter. In function "pale.toHex", argument #1, index #'..i..'.')
-		
-			local a = _code[i] // 16
-			local b = _code[i] %  16
+			if     _code[i] < 0   then _code[i] = 0 
+			elseif _code[i] > 255 then _code[i] = 255
+			end
 			
-			-- 0 - 9 ; A - F
-			if a < 10 then a = tostring(a) else a = color[a] end
-			if b < 10 then b = tostring(b) else b = color[b] end
-			
-			inHexa = inHexa..a..b
+			inHexa = inHexa..string.format("%x", math.floor(_code[i]))
 		end
 		
 		return sortCode(inHexa, order, true, low)
@@ -104,3 +92,4 @@ do
 end
 
 local pale = magicPalette
+print(pale.toDec("ffffff"))
