@@ -78,7 +78,35 @@ do
 		return sortCode(inHexa, order, true, low)
 	end
 
-	local function swap(id, code) end -- id = "0" - "15" or "all"
+	local function swap(_code, id)
+		local code = _code-- remove trash
+		if  string.sub(_code, 1, 4) == "000:" then code = string.sub(_code, 5)
+		elseif string.sub(_code, 1, 1) == "#" then code = string.sub(_code, 2)
+		end
+		
+		-- function core
+		local function rgb(v, ifPalette)
+			local add = ifPalette or 0
+			for i = 0, 2 do
+				local lcl = i + 1 + (i * 1)-- LoCaLe
+				local color = tonumber(string.sub(code, lcl + add, lcl + 1 + add), 16)
+				poke(0x03fc0 + v * 3 + i, color)-- apply the edition in ram
+			end
+		end
+		
+		if id == "palette" then
+			for id = 0, 15 do rgb(id, 6 * id) end-- swap palette
+			
+		elseif id == "equal" then
+			for id = 0, 15 do rgb(id) end-- edit all colors (all are equal)
+		
+		else
+			rgb(tonumber(id))-- edit one color
+		
+		end
+		
+	end
+
 	local function light(id, speed, less, duration) end
 	
 	-- ADD TO TABLE -------------------------------------------------------------
@@ -86,10 +114,9 @@ do
 	magicPalette.sortCode = sortCode
 	magicPalette.toHex    = toHex
 	magicPalette.toDec    = toDec
-	-- magicPalette.swap     = swap
+	magicPalette.swap     = swap
 	-- magicPalette.light    = light
 
 end
 
 local pale = magicPalette
-print(pale.toDec("ffffff"))
