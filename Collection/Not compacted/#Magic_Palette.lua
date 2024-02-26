@@ -6,21 +6,19 @@ local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There
 do
 	----- CONVERSION -----
 
-	local function sortCode(code, order, hex, low)-- internal
+	local function sortCode(code, order, low)-- internal
 		local ord, _code, c = order or 0, {}, nil-- type of return; colors; to return
 		
 		-- HEXADECIMAL CODE
-		if hex and (type(code) == "string" or (type(code) == "table" and type(code[1]) == "string" and #code == 1)) then
-		
-			local temp = type(code) == "table" and code[1] or code
-			temp = string.sub(temp, 1, 1) == "#" and string.sub(temp, 2) or temp
-			
-			for i = 2, 6 do if #temp == 6 then break end temp = temp.."0" end-- fill void spaces
+		if type(_code) == "string" then
+			local temp = _code
+			for i = #temp + 1, 6 do temp = temp.."0" end-- fill void spaces
 			
 			local _font = low and string.lower or string.upper
 			for i = 1, 3 do local id = {1, 3, 5} _code[i] = _font(string.sub(temp, id[i], id[i] + 1)) end
 		
-		else-- NUMERIC CODE
+		-- DECIMAL CODE
+		else
 			_code = code
 		end
 		
@@ -75,7 +73,7 @@ do
 			inHexa = inHexa..string.format("%x", math.floor(_code[i]))
 		end
 		
-		return sortCode(inHexa, order, true, low)
+		return sortCode(inHexa, order, low)
 	end
 
 	local function swap(_code, id)
