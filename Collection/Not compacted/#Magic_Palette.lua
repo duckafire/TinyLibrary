@@ -4,6 +4,10 @@ local magicPalette = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
 
 do
+	----- GLOBAL -----
+	
+	_G.__PALETTE__, _G.__PALETTE2__  = {}, {}
+
 	----- CONVERSION -----
 
 	local function sortCode(code, order, low)-- internal
@@ -105,14 +109,18 @@ do
 		
 	end
 
-	local function light(speed)
+	local function light(speed, absolut)
 		local spd = speed and math.floor(speed) or 1-- update speed
 		
 		for i = 0, 15 do-- index
 			for j = 0, 2 do-- rgb
 			
 				local cur = peek(0x03FC0 + i * 3 + j)
-				if (spd < 0 and cur >= 0) or (spd > 0 and cur <= 255) then
+				
+				local min = absolut and __PALETTE__[i][j] or 0
+				local max = absolut and __PALETTE__[i][j] or 255
+				
+				if (spd < 0 and cur >= min) or (spd > 0 and cur <= max) then
 					local value
 					
 					if spd < 0 then value = (cur + spd >= 0  ) and cur + spd or 0
@@ -127,6 +135,18 @@ do
 		
 	end
 	
+	local function save(id, tbl)
+		local temp = (id == -1) and tbl or (id == 0) and __PALETTE__ or (id == 1) and __PALETTE2__ or nil
+		
+		for i = 0, 15 do
+			temp = {}
+			for j = 0, 2 do
+				temp[i][j] = peek(0x03FC0 + i * 3 + j)
+			end
+		end
+	
+	end
+	
 	-- ADD TO TABLE -------------------------------------------------------------
 
 	magicPalette.sortCode = sortCode
@@ -134,6 +154,7 @@ do
 	magicPalette.toDec    = toDec
 	magicPalette.swap     = swap
 	magicPalette.light    = light
+	magicPalette.save     = save
 
 end
 
