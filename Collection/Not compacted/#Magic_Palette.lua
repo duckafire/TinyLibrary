@@ -105,7 +105,27 @@ do
 		
 	end
 
-	local function light(id, speed, less, duration) end
+	local function light(speed)
+		local spd = speed and math.floor(speed) or 1-- update speed
+		
+		for i = 0, 15 do-- index
+			for j = 0, 2 do-- rgb
+			
+				local cur = peek(0x03FC0 + i * 3 + j)
+				if (spd < 0 and cur >= 0) or (spd > 0 and cur <= 255) then
+					local value
+					
+					if spd < 0 then value = (cur + spd >= 0  ) and cur + spd or 0
+					else            value = (cur + spd <= 255) and cur + spd or 255
+					end
+						
+					poke(0x03FC0 + i * 3 + j, value)
+				end
+				
+			end
+		end
+		
+	end
 	
 	-- ADD TO TABLE -------------------------------------------------------------
 
@@ -113,7 +133,7 @@ do
 	magicPalette.toHex    = toHex
 	magicPalette.toDec    = toDec
 	magicPalette.swap     = swap
-	-- magicPalette.light    = light
+	magicPalette.light    = light
 
 end
 
