@@ -106,26 +106,27 @@ do
 	end
 
 	local function light(speed, tbl)
-		local spd = speed and math.floor(speed) or 1-- update speed
+		local spd, qtt = speed and math.floor(speed) or 1, 0-- update speed; quantity of color in min/max
 		
 		for i = 0, 15 do-- index
 			for j = 0, 2 do-- rgb
 			
 				local cur = peek(0x03FC0 + i * 3 + j)
 				
-				-- local min = type(tbl) == "table" and tbl[i][j] or 0
-				-- local max = type(tbl) == "table" and tbl[i][j] or 255
+				local min = type(tbl) == "table" and tbl[i][j] or 0
+				local max = type(tbl) == "table" and tbl[i][j] or 255
 				
-				-- local mem = type(tbl) == "table" and tbl[i][j] or spd < 0 and 0 or 255
-				
-				local value = (cur + spd >= 0) and cur + spd or 0-- less
-				if spd > 0 then value = (cur + spd <= 255) and cur + spd or 255 end-- more
+				local value = (cur + spd >= min) and cur + spd or min-- less
+				if spd > 0 then value = (cur + spd <= max) and cur + spd or max end-- more
 				
 				poke(0x03FC0 + i * 3 + j, value)
+				
+				if value == min or value == max then qtt = qtt + 1 end
 				
 			end
 		end
 		
+		return qtt == 48
 	end
 	
 	local function save(tbl, hex)
