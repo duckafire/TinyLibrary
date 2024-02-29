@@ -1,12 +1,12 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 0.0]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.0]
 
 local magicPalette = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
 
 do
-	----- CONVERSION -----
+	----- ABOUT PALETTE CODE -----
 
-	local function sortCode(code, order, low)-- internal
+	local function sortCode(code, order, low)
 		local ord, _code, c = order or 0, {}, nil-- type of return; colors; to return
 		
 		-- HEXADECIMAL CODE
@@ -14,8 +14,9 @@ do
 			local temp = _code
 			for i = #temp + 1, 6 do temp = temp.."0" end-- fill void spaces
 			
+			local id    = {1, 3, 5}
 			local _font = low and string.lower or string.upper
-			for i = 1, 3 do local id = {1, 3, 5} _code[i] = _font(string.sub(temp, id[i], id[i] + 1)) end
+			for i = 1, 3 do _code[i] = _font(string.sub(temp, id[i], id[i] + 1)) end
 		
 		-- DECIMAL CODE
 		else
@@ -41,11 +42,34 @@ do
 				c = _code[1]..", ".._code[2]..", ".._code[3]-- decimal
 			end
 		else
-			error( '[ Magic_Palette ] The parameter "together" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
+			error( '[ Magic_Palette ] The parameter "order" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
 		end
 		
 		return c
 	end
+	
+	local function save(tbl, hex)
+		
+		if hex then   tbl = ""   else   tbl = {}   end
+		
+		for i = 0, 15 do	
+			if not hex then tbl[i] = {} end
+			
+			for j = 0, 2 do
+				if hex then
+					tbl = tbl..string.format("%x", peek(0x03FC0 + i * 3 + j))-- hexadecimal
+				else
+					tbl[i][j] = peek(0x03FC0 + i * 3 + j)-- decimal (in sub-tables)
+				end
+			end
+		
+		end
+	
+		return tbl
+	
+	end
+	
+	----- CONVERSION -----
 	
 	local function toDec(_code, order)
 		local inDeci = {}
@@ -75,6 +99,8 @@ do
 		
 		return sortCode(inHexa, order, low)
 	end
+
+	-- CHANGE TINT (RGB)
 
 	local function swap(_code, id)
 		local code = _code-- remove trash
@@ -127,27 +153,6 @@ do
 		end
 		
 		return qtt == 48
-	end
-	
-	local function save(tbl, hex)
-		
-		if hex then   tbl = ""   else   tbl = {}   end
-		
-		for i = 0, 15 do	
-			if not hex then tbl[i] = {} end
-			
-			for j = 0, 2 do
-				if hex then
-					tbl = tbl..string.format("%x", peek(0x03FC0 + i * 3 + j))-- hexadecimal
-				else
-					tbl[i][j] = peek(0x03FC0 + i * 3 + j)-- decimal (in sub-tables)
-				end
-			end
-		
-		end
-	
-		return tbl
-	
 	end
 	
 	-- ADD TO TABLE -------------------------------------------------------------
