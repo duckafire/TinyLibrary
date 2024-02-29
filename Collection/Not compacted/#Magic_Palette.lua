@@ -4,10 +4,6 @@ local magicPalette = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
 
 do
-	----- GLOBAL -----
-	
-	_G.__PALETTE__, _G.__PALETTE2__  = {}, {}
-
 	----- CONVERSION -----
 
 	local function sortCode(code, order, low)-- internal
@@ -109,7 +105,7 @@ do
 		
 	end
 
-	local function light(speed, absolut)
+	local function light(speed, tbl)
 		local spd = speed and math.floor(speed) or 1-- update speed
 		
 		for i = 0, 15 do-- index
@@ -117,33 +113,39 @@ do
 			
 				local cur = peek(0x03FC0 + i * 3 + j)
 				
-				local min = absolut and __PALETTE__[i][j] or 0
-				local max = absolut and __PALETTE__[i][j] or 255
+				-- local min = type(tbl) == "table" and tbl[i][j] or 0
+				-- local max = type(tbl) == "table" and tbl[i][j] or 255
 				
-				if (spd < 0 and cur >= min) or (spd > 0 and cur <= max) then
-					local value
-					
-					if spd < 0 then value = (cur + spd >= 0  ) and cur + spd or 0
-					else            value = (cur + spd <= 255) and cur + spd or 255
-					end
-						
-					poke(0x03FC0 + i * 3 + j, value)
-				end
+				-- local mem = type(tbl) == "table" and tbl[i][j] or spd < 0 and 0 or 255
+				
+				local value = (cur + spd >= 0) and cur + spd or 0-- less
+				if spd > 0 then value = (cur + spd <= 255) and cur + spd or 255 end-- more
+				
+				poke(0x03FC0 + i * 3 + j, value)
 				
 			end
 		end
 		
 	end
 	
-	local function save(id, tbl)
-		local temp = (id == -1) and tbl or (id == 0) and __PALETTE__ or (id == 1) and __PALETTE2__ or nil
+	local function save(tbl, hex)
 		
-		for i = 0, 15 do
-			temp = {}
+		if hex then   tbl = ""   else   tbl = {}   end
+		
+		for i = 0, 15 do	
+			if not hex then tbl[i] = {} end
+			
 			for j = 0, 2 do
-				temp[i][j] = peek(0x03FC0 + i * 3 + j)
+				if hex then
+					tbl = tbl..string.format("%x", peek(0x03FC0 + i * 3 + j))-- hexadecimal
+				else
+					tbl[i][j] = peek(0x03FC0 + i * 3 + j)-- decimal (in sub-tables)
+				end
 			end
+		
 		end
+	
+		return tbl
 	
 	end
 	
