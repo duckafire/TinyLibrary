@@ -158,11 +158,11 @@ do
 	-- ADD TO TABLE -------------------------------------------------------------
 
 	magicPalette.sortCode = sortCode
+	magicPalette.save     = save
 	magicPalette.toHex    = toHex
 	magicPalette.toDec    = toDec
 	magicPalette.swap     = swap
 	magicPalette.light    = light
-	magicPalette.save     = save
 
 end
 

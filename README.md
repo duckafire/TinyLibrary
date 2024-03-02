@@ -10,6 +10,7 @@ with the main objective to facilitate the creation of *tiny* games.
 | :-: | :-: |
 | coli2DA | Check collisions between objects |
 | print+ | To facilitate the manipulation of text objects |
+| Magic_Palette | Change the color palette at run time |
 | === | Comming soon |
 
 * ###### [See the Wiki](https://github.com/duckafire/TinyLibrary/wiki "Official Wiki").
