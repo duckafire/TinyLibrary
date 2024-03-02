@@ -1,4 +1,4 @@
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.0]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.1]
 
 local magicPalette = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -48,25 +48,25 @@ do
 		return c
 	end
 	
-	local function save(tbl, hex)
+	local function save(hex)
+		local var
 		
-		if hex then   tbl = ""   else   tbl = {}   end
+		if hex then   var = ""   else   var = {}   end
 		
 		for i = 0, 15 do	
-			if not hex then tbl[i] = {} end
+			if not hex then var[i] = {} end
 			
 			for j = 0, 2 do
 				if hex then
-					tbl = tbl..string.format("%x", peek(0x03FC0 + i * 3 + j))-- hexadecimal
+					var = var..string.format("%x", peek(0x03FC0 + i * 3 + j))-- hexadecimal
 				else
-					tbl[i][j] = peek(0x03FC0 + i * 3 + j)-- decimal (in sub-tables)
+					var[i][j] = peek(0x03FC0 + i * 3 + j)-- decimal (in sub-tables)
 				end
 			end
 		
 		end
 	
-		return tbl
-	
+		return var
 	end
 	
 	----- CONVERSION -----
@@ -159,8 +159,8 @@ do
 
 	magicPalette.sortCode = sortCode
 	magicPalette.save     = save
-	magicPalette.toHex    = toHex
 	magicPalette.toDec    = toDec
+	magicPalette.toHex    = toHex
 	magicPalette.swap     = swap
 	magicPalette.light    = light
 
