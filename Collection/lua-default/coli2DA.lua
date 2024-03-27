@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 2.6
+-- VERSION: 2.7
 
 -- FOLLOW_ME:
 	-- Itch:     http://duckafire.itch.io
@@ -61,7 +61,7 @@ local function checkBodies( par, types )-- (table) all parameters; (table) type 
 		local res = 0-- RESult of conditions
 
 		if type( cur ) == "table" then-- res = 1, 2 (0)
-			bodies[i] = newBody( types[i], cur.x or cur[1], cur.y or cur[2], cur.width or cur[3], cur.height or cur[4] )
+			bodies[i] = newBody( types[i], cur.x or cur[1], cur.y or cur[2], cur.width or cur.radius or cur[3], cur.height or cur[4] )
 			lastPar = lastPar + 1
 
 		else-- res = 3
