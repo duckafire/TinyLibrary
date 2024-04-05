@@ -22,7 +22,7 @@
 -- SOFTWARE.
 ----------------------------------------------------------------------------------
 
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.0]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.1]
 
 local longBit = {}
 local DA_LICENSE = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -45,10 +45,24 @@ do
 		error('[longBit] Undefined class: "'..d..'"')
 	end
 
+	local function parameter(init, INIT, max, MAX)
+		local _init = init or INIT
+		local _max  = max  or MAX
+		local add   = (_init > _max) and -1 or 1
+		
+		return _init, _max, _add
+	end
+
 	----- SET VALUE -----
 
-	local function setClass(...)
-		_G.__LONGBIT_CLASSES = {...}
+	local function setClass(classes, max, init)
+		local _init, _max, add = parameter(init, 0, max, #classes - 1)
+		local id = 0
+		
+		for i = _init, _max, add do
+			id = id + 1
+			_G.__LONGBIT_CLASSES[i] = classes[id]
+		end
 	end
 
 	local function setMem(newValue, itemID, className, lenght)
@@ -81,9 +95,7 @@ do
 	end
 
 	local function boot(memID, max, init)
-		local _init = init or 0
-		local _max  = max or #memID - 1
-		local add   = (_init > _max) and -1 or 1
+		local _init, _max, add = parameter(init, 0, max, #memID -1)
 
 		for i = _init, _max, add do
 			pmem(i, tonumber(memID[i + 1]))
@@ -95,9 +107,7 @@ do
 			_G.__LONGBIT_CLASSES = {}
 			
 		else
-			local _init = init or 0
-			local _max  = max or 255
-			local add   = (_init > _max) and -1 or 1
+			local _init, _max, add = parameter(init, 0, max, 255)
 
 			for i = _init, _max, add do pmem(i, 0) end
 		end

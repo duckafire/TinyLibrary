@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 1.0
+-- VERSION: 1.1
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -53,12 +53,26 @@ local function classToId(id)-- number (pmem id)
 	error('[longBit] Undefined class: "'..d..'"')
 end
 
+local function parameter(init, INIT, max, MAX)
+	local _init = init or INIT
+	local _max  = max  or MAX
+	local add   = (_init > _max) and -1 or 1
+	
+	return _init, _max, _add
+end
+
 
 
 ----- SET VALUE -----
 
-local function setClass(...)
-	_G.__LONGBIT_CLASSES = {...}
+local function setClass(classes, max, init)
+	local _init, _max, add = parameter(init, 0, max, #classes - 1)
+	local id = 0
+	
+	for i = _init, _max, add do
+		id = id + 1
+		_G.__LONGBIT_CLASSES[i] = classes[id]
+	end
 end
 
 local function setMem(newValue, itemID, className, lenght)
@@ -91,9 +105,7 @@ local function setMem(newValue, itemID, className, lenght)
 end
 
 local function boot(memID, max, init)
-	local _init = init or 0
-	local _max  = max or #memID - 1
-	local add   = (_init > _max) and -1 or 1
+	local _init, _max, add = parameter(init, 0, max, #memID -1)
 
 	for i = _init, _max, add do
 		pmem(i, tonumber(memID[i + 1]))
@@ -105,9 +117,7 @@ local function clear(class, max, init)
 		_G.__LONGBIT_CLASSES = {}
 		
 	else
-		local _init = init or 0
-		local _max  = max or 255
-		local add   = (_init > _max) and -1 or 1
+		local _init, _max, add = parameter(init, 0, max, 255)
 
 		for i = _init, _max, add do pmem(i, 0) end
 	end
@@ -132,7 +142,7 @@ end
 local function getClass(id)
 	return _G.__LONGBIT_CLASSES[id]
 end
-	
+
 
 	
 ----- ADD TO TABLE -----
