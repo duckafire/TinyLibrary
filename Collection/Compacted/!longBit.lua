@@ -1,0 +1,7 @@
+-- [COMPACTED or NOT COMPACTED] Copy and paste the code in your cart [v: 1.0]
+
+local DAMIT,DA="github.com/DuckAfire/TinyLibrary/blob/main/LICENSE",{}
+
+do _G.__LONGBIT_CLASSES={} local _TS,_TN,_T,_SS = tostring,tonumber,type,string.sub local function _C(d) assert(_G.__LONGBIT_CLASSES[1]~=nil,"[longBit] pmem classes not defined.") for i=1,#_G.__LONGBIT_CLASSES do if d==_G.__LONGBIT_CLASSES[i] then return i-1 end end error('[longBit] Undefined class: "'..d..'"') end DA.setClass=function(...) _G.__LONGBIT_CLASSES={...} end DA.setMem=function(n,P,C,L) local p,l,v,b,f=P+1,L or 1 if _T(n)=="boolean" then v=n and 1 or 0 else v=_TS(n) if l>1 then for i=1,l do v=(#v<l) and "0"..v or v end end end local function c(a,z) return _SS(_TS(pmem(_C(C))),a,z) end b,f= c(1,p-1),c(p+l) pmem(_C(C),_TN(b..v..f)) end DA.boot=function(v,z,a) for i=a or 0,z or #v-1,(A~=nil and A>Z) and -1 or 1 do pmem(i,_TN(v[i+1])) end end DA.clear=function(Z,A) for i=A or 0,Z or 255,(A~=nil and A>Z) and -1 or 1 do pmem(i,0) end end DA.getNum=function(P,c,l) local p=P+1 return _TN(_SS(_TS(pmem(_C(c))),p,p+((l or 1)-1))) end DA.getBool=function(p,c,e) return DA.getNum(p,c)==(e or 1) end DA.getClass=function(i) return _G.__LONGBIT_CLASSES[i] end end
+
+local lbit=DA

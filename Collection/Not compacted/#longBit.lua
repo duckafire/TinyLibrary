@@ -4,55 +4,34 @@ local longBit = {}
 local DA_LICENSE = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
 
 do
-	----- SET VALUE -----
-
-	_G.__LONGBIT_CLASSES = {}
-
-	local function setClass(...)
-		_G.__LONGBIT_CLASSES = {...}
-	end
-
-	local function bootMem(memID)
-		for i = 0, #memID - 1 do
-			pmem(i, tonumber(memID[i + 1]))
-		end
-	end
-
-	local function clearMem(max, init)
-		local _init = init or 0
-		local _max  = max or 255
-		local add   = (init ~= nil and init < 0) and -1 or 1
-
-		for i = _init, _max, add do pmem(i, 0) end
-	end
+	----- GLOBAL -----
+	
+	_G.__LONGBIT_CLASSES = {}-- "_G" to explicity a global table (or variable)
 
 	----- INTERNAL -----
 
 	local function classToId(id)-- number (pmem id)
-		for i = 1, #__LONGBIT_CLASSES do
-			if id == __LONGBIT_CLASSES[i] then return i - 1 end
+		assert(_G.__LONGBIT_CLASSES[1]~=nil, "[longBit] pmem classes not defined.")
+
+		for i = 1, #_G.__LONGBIT_CLASSES do
+			if id == _G.__LONGBIT_CLASSES[i] then return i - 1 end
 		end
-	end
-
-	----- GET VALUE -----
-
-	local function getMem(itemID, className, lenght)
-		local _itemID = itemID + 1
-		local _lenght = lenght or 1
-		local pmemID  = classToId(className)
 		
-		return tonumber(string.sub(tostring(pmem(pmemID)), _itemID, _itemID + _lenght - 1))
+		-- if no a "class" is not returned
+		error('[longBit] Undefined class: "'..d..'"')
 	end
 
-	local function boolMem(itemID, className, equal)-- get value like boolean
-		return getMem(itemID, className) == (equal or 1)
+	----- SET VALUE -----
+
+	local function setClass(...)
+		_G.__LONGBIT_CLASSES = {...}
 	end
 
 	local function setMem(newValue, itemID, className, lenght)
 		local pmemID  = classToId(className)
 		local _itemID = itemID + 1
 		local _lenght = lenght or 1
-		local value = nil
+		local value   = nil
 		
 		-- convert boolean to binary
 		if type(newValue) == "boolean" then
@@ -77,14 +56,56 @@ do
 		pmem(pmemID, tonumber(back..value..front))
 	end
 
+	local function boot(memID, max, init)
+		local _init = init or 0
+		local _max  = max or #memID - 1
+		local add   = (_init > _max) and -1 or 1
+
+		for i = _init, _max, add do
+			pmem(i, tonumber(memID[i + 1]))
+		end
+	end
+
+	local function clear(class, max, init)
+		if class then
+			_G.__LONGBIT_CLASSES = {}
+			
+		else
+			local _init = init or 0
+			local _max  = max or 255
+			local add   = (_init > _max) and -1 or 1
+
+			for i = _init, _max, add do pmem(i, 0) end
+		end
+	end
+
+	----- GET VALUE -----
+
+	local function getNum(itemID, className, lenght)
+		local _itemID = itemID + 1
+		local _lenght = lenght or 1
+		local pmemID  = classToId(className)
+		
+		return tonumber(string.sub(tostring(pmem(pmemID)), _itemID, _itemID + _lenght - 1))
+	end
+
+	local function getBool(itemID, className, equal)
+		return getNum(itemID, className) == (equal or 1)
+	end
+
+	local function getClass(id)
+		return _G.__LONGBIT_CLASSES[id]
+	end
+	
 	----- ADD TO TABLE -----
 
 	longBit.setClass = setClass
-	longBit.bootMem  = bootMem
-	longBit.clearMem = clearMem
-	longBit.getMem   = getMem
-	longBit.boolMem  = boolMem
 	longBit.setMem   = setMem
+	longBit.boot     = boot
+	longBit.clear    = clear
+	longBit.getNum   = getNum
+	longBit.getBool  = getBool
+	longBit.getClass = getClass
 
 end
 
