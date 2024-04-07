@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 1.1
+-- VERSION: 1.2
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -43,10 +43,10 @@ _G.__LONGBIT_CLASSES = {}-- "_G" to explicity a global table (or variable)
 ----- INTERNAL -----
 
 local function classToId(id)-- number (pmem id)
-	assert(_G.__LONGBIT_CLASSES[1]~=nil, "[longBit] pmem classes not defined.")
+	assert(_G.__LONGBIT_CLASSES[0]~=nil, "[longBit] pmem classes not defined.")
 
-	for i = 1, #_G.__LONGBIT_CLASSES do
-		if id == _G.__LONGBIT_CLASSES[i] then return i - 1 end
+	for i = 0, #_G.__LONGBIT_CLASSES do
+		if id == _G.__LONGBIT_CLASSES[i] then return i end
 	end
 	
 	-- if no a "class" is not returned
@@ -104,11 +104,19 @@ local function setMem(newValue, itemID, className, lenght)
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function boot(memID, max, init)
+local function boot(memID, max, init, empty)
 	local _init, _max, add = parameter(init, 0, max, #memID -1)
-
+	local value = ""
+	
 	for i = _init, _max, add do
-		pmem(i, tonumber(memID[i + 1]))
+		-- add "joker" value
+		value = string.sub("2"..tostring(memID[i + 1]), 1, 10)
+		
+		-- fill empty spaces
+		while #value < 10 do value = value..(empty or "0") end
+	
+		-- save in persistent memory
+		pmem(i, tonumber(value))
 	end
 end
 

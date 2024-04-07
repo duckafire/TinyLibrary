@@ -22,7 +22,7 @@
 -- SOFTWARE.
 ----------------------------------------------------------------------------------
 
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.1]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.2]
 
 local longBit = {}
 local DA_LICENSE = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -35,10 +35,10 @@ do
 	----- INTERNAL -----
 
 	local function classToId(id)-- number (pmem id)
-		assert(_G.__LONGBIT_CLASSES[1]~=nil, "[longBit] pmem classes not defined.")
+		assert(_G.__LONGBIT_CLASSES[0]~=nil, "[longBit] pmem classes not defined.")
 
-		for i = 1, #_G.__LONGBIT_CLASSES do
-			if id == _G.__LONGBIT_CLASSES[i] then return i - 1 end
+		for i = 0, #_G.__LONGBIT_CLASSES do
+			if id == _G.__LONGBIT_CLASSES[i] then return i end
 		end
 		
 		-- if no a "class" is not returned
@@ -94,11 +94,19 @@ do
 		pmem(pmemID, tonumber(back..value..front))
 	end
 
-	local function boot(memID, max, init)
+	local function boot(memID, max, init, empty)
 		local _init, _max, add = parameter(init, 0, max, #memID -1)
-
+		local value = ""
+		
 		for i = _init, _max, add do
-			pmem(i, tonumber(memID[i + 1]))
+			-- add "joker" value
+			value = string.sub("2"..tostring(memID[i + 1]), 1, 10)
+			
+			-- fill empty spaces
+			while #value < 10 do value = value..(empty or "0") end
+		
+			-- save in persistent memory
+			pmem(i, tonumber(value))
 		end
 	end
 
@@ -130,7 +138,7 @@ do
 	local function getClass(id)
 		return _G.__LONGBIT_CLASSES[id]
 	end
-	
+
 	----- ADD TO TABLE -----
 
 	longBit.setClass = setClass
