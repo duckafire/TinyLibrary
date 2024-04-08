@@ -6,12 +6,13 @@ with the main objective to facilitate the creation of *tiny* games.
 * ###### [How to use libraries on Tic80?](https://github.com/duckafire/TinyLibrary/wiki "Work in Progress")
 
 ### Currently, this collection has the next libraries:
-| Libraries | Short description |
-| :-: | :-: |
-| coli2DA | Check collisions between objects |
-| print+ | To facilitate the manipulation of text objects |
-| Magic_Palette | Change the color palette at run time |
-| === | Comming soon |
+| Libraries     | Short description                                     |
+| :-:           | :-:                                                   |
+| coli2DA       | Check collisions between objects                      |
+| print+        | To facilitate the manipulation of text objects        |
+| Magic_Palette | Change the color palette at run time                  |
+| longBit       | Use the memory of a single "pmem" for multiple things |
+| ============= | Comming soon                                          |
 
 * ###### [See the Wiki](https://github.com/duckafire/TinyLibrary/wiki "Official Wiki").
 
