@@ -29,21 +29,21 @@ do
 	
 	----- TO PRINT FUNCTION -----
 	
-	local function lenght( text, lines, fixed, size, small )
+	local function lenght(text, lines, fixed, size, small)
 		-- X
-		assert( type( text ) == "string", '[print+] String (argument) not specified. In function "pplus.lenght", argument #1' )
+		assert(type(text) == "string", '[print+] String (argument) not specified. In function "pplus.lenght", argument #1')
 			
-		local scale = print( text, 0, 136 )
+		local scale = print(text, 0, 136)
 		
 		scale = small and scale - #text * 2 or scale-- 6x6 in normal font; 4x6 in small font (in most cases)
 		
 		if fixed then
 			for i = 1, #text do
 				local add = 0
-				local cur = string.sub( text, i, i )-- current letter
+				local cur = string.sub(text, i, i)-- current letter
 				
-				if 	   string.match( cur, '[%"%+%-%_%=%<%>%?%{%}%~]' ) or cur == " " or cur == "'" then   add = 2
-				elseif string.match( cur, '[%!%.%,%(%)%:%;%[%]]' ) then   add = 3
+				if 	   string.match(cur, '[%"%+%-%_%=%<%>%?%{%}%~]') or cur == " " or cur == "'" then   add = 2
+				elseif string.match(cur, '[%!%.%,%(%)%:%;%[%]]') then   add = 3
 				elseif cur == "|" then   add = 4
 				end
 				
@@ -59,39 +59,39 @@ do
 		return scale * size, (6 * size) * lines
 	end
 
-	local function center( text, x, y, lines, fixed, size, small )
+	local function center(text, x, y, lines, fixed, size, small)
 		local x, y = x or 0, y or 0
 		
-		local width, height = lenght( text, lines, fixed, size, small )
+		local width, height = lenght(text, lines, fixed, size, small)
 		
 		return x - width // 2 + 1, y - height // 2 + 1
 	end
 	
-	local function list( text, x, y, color, space, fixed, size, small )
+	local function list(text, x, y, color, space, fixed, size, small)
 	
-		assert( type( text ) == "table", '[print+] Table (argument) not specified. In function "pplus.list", argument #1' )
+		assert(type(text) == "table", '[print+] Table (argument) not specified. In function "pplus.list", argument #1')
 		
 		local x, y = x or 0, y or 0
 		local color, space = color or 15, space or 10-- vertical spaces
 		
 		for i = 1, #text do
-			print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size or 1, small )
+			print(tostring(text[i]), x, y + space * (i - 1), color, fixed, size or 1, small)
 		end
 		
 	end
 
 	----- USE SPRITES -----
 
-	local function title( sprites, X, Y, dimensions, space, size, chromaKey, vertical )
-		assert( type( sprites ) == "table", '[print+] Table (argument) not specified. In function "pplus.title", argument #1' )
+	local function title(sprites, X, Y, dimensions, space, size, chromaKey, vertical)
+		assert(type(sprites) == "table", '[print+] Table (argument) not specified. In function "pplus.title", argument #1')
 		
 		local back-- table to store the chromaKey colors
 		
-		if     type( chromaKey ) == "number" then
+		if     type(chromaKey) == "number" then
 			back = {}
 			for i = 1, #sprites do   back[i] = chromaKey   end-- one index to all index in table
 		
-		elseif type( chromaKey ) == "table"  then
+		elseif type(chromaKey) == "table"  then
 			back = ChromaKey
 			if #back < #sprites then   for i = #back + 1, #sprites do   back[i] = 0   end   end-- populate the table with default (0)
 		
@@ -112,13 +112,13 @@ do
 			
 			if vertical then
 				x = X
-				y = Y + (dimensions + space) * ( i - 1 )
+				y = Y + (dimensions + space) * (i - 1)
 			else
-				x = X + (dimensions + space) * ( i - 1 )
+				x = X + (dimensions + space) * (i - 1)
 				y = Y
 			end
 			
-			spr( sprites[i], x, y, back[i], size )
+			spr(sprites[i], x, y, back[i], size)
 		end
 		
 	end

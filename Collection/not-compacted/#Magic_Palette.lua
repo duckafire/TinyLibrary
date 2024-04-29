@@ -20,7 +20,7 @@
 -- 3. This notice may not be removed or altered from any source distribution.
 ----------------------------------------------------------------------------------
 
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.1]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 1.2]
 
 local magicPalette = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -64,7 +64,7 @@ do
 				c = _code[1]..", ".._code[2]..", ".._code[3]-- decimal
 			end
 		else
-			error( '[ Magic_Palette ] The parameter "order" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
+			error('[Magic_Palette] The parameter "order" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.')
 		end
 		
 		return c
@@ -153,7 +153,7 @@ do
 		
 	end
 
-	local function light(speed, tbl)
+	local function shine(speed, tbl)
 		local spd, qtt = speed and math.floor(speed) or 1, 0-- update speed; quantity of color in min/max
 		
 		for i = 0, 15 do-- index
@@ -184,7 +184,7 @@ do
 	magicPalette.toDec    = toDec
 	magicPalette.toHex    = toHex
 	magicPalette.swap     = swap
-	magicPalette.light    = light
+	magicPalette.shine    = shine
 
 end
 

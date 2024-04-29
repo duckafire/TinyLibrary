@@ -1,6 +1,6 @@
 -- NAME:    Magic Pallete
 -- AUTHOR:  DuckAfire
--- VERSION: 1.1
+-- VERSION: 1.2
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -70,7 +70,7 @@ local function sortCode(code, order, low)
 			c = _code[1]..", ".._code[2]..", ".._code[3]-- decimal
 		end
 	else
-		error( '[ Magic_Palette ] The parameter "order" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.' )
+		error('[Magic_Palette] The parameter "order" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.')
 	end
 	
 	return c
@@ -163,7 +163,7 @@ local function swap(_code, id)
 	
 end
 
-local function light(speed, tbl)
+local function shine(speed, tbl)
 	local spd, qtt = speed and math.floor(speed) or 1, 0-- update speed; quantity of color in min/max
 	
 	for i = 0, 15 do-- index
@@ -198,6 +198,6 @@ magicPalette.save     = save
 magicPalette.toDec    = toDec
 magicPalette.toHex    = toHex
 magicPalette.swap     = swap
-magicPalette.light    = light
+magicPalette.shine    = shine
 
 return magicPalette
