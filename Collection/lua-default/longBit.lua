@@ -40,7 +40,7 @@ _G.__LONGBIT_CLASSES = {}-- "_G" to explicity a global table (or variable)
 
 ----- INTERNAL -----
 
-local function classToId(id)-- number (pmem id)
+local function classToId(id)-- memory index
 	assert(_G.__LONGBIT_CLASSES[0]~=nil, "[longBit] pmem classes not defined.")
 
 	for i = 0, #_G.__LONGBIT_CLASSES do
@@ -51,7 +51,7 @@ local function classToId(id)-- number (pmem id)
 	error('[longBit] Undefined class: "'..d..'"')
 end
 
-local function parameter(init, INIT, max, MAX)
+local function getArgs(init, INIT, max, MAX)
 	local _init = init or INIT
 	local _max  = max  or MAX
 	local add   = (_init > _max) and -1 or 1
@@ -64,7 +64,7 @@ end
 ----- SET VALUE -----
 
 local function setClass(classes, max, init)
-	local _init, _max, add = parameter(init, 0, max, #classes - 1)
+	local _init, _max, add = getArgs(init, 0, max, #classes - 1)
 	local id = 0
 	
 	for i = _init, _max, add do
@@ -102,31 +102,51 @@ local function setMem(newValue, itemID, className, lenght)
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function boot(memID, max, init, empty)
-	local _init, _max, add = parameter(init, 0, max, #memID -1)
+local function boot(memID, force, max, init, empty)
+	local _init, _max, add = getArgs(init, 0, max, #memID -1)
 	local value = ""
 	
 	for i = _init, _max, add do
-		-- add "joker" value
-		value = string.sub("2"..tostring(memID[i + 1]), 1, 10)
+		if pmem(i) == 0 or force then
+			
+			-- add "joker" value
+			assert(memID[i + 1] <= 999999999, '[longBit] "'..memID[i + 1]..'" value is too big, the maximum is "999999999". In function lbit.boot, argument #1 (index: '..i..')')
+			value = "2"..tostring(memID[i + 1])
+			
+			-- fill empty spaces
+			while #value < 10 do value = value..(empty or "0") end
 		
-		-- fill empty spaces
-		while #value < 10 do value = value..(empty or "0") end
-	
-		-- save in persistent memory
-		pmem(i, tonumber(value))
+			-- save in persistent memory
+			pmem(i, tonumber(value))
+		
+		end
 	end
+	
 end
 
-local function clear(class, max, init)
-	if class then
-		_G.__LONGBIT_CLASSES = {}
-		
-	else
-		local _init, _max, add = parameter(init, 0, max, 255)
+local function clear(_type, max, init)
+	-- check if "_type" is valid
+	assert(_type == "all", _type == "memory" or _type == "classes" or _type == "lessClass", '[longBit] Keyword '.._type..' is invalid, try "all", "memory", "classes" or "lessClass". In function lbit.clear, argument #1.')
+	
+	if class == "memory" or class == "all" then
+		local _init, _max, add = getArgs(init, 0, max, 255)
 
-		for i = _init, _max, add do pmem(i, 0) end
+		for i = _init, _max, add do   pmem(i, 0)   end
 	end
+	
+	if class == "classes" or _type == "all" then
+		_G.__LONGBIT_CLASSES = {}
+	end
+	
+	if class == "lessClass" then
+		for i = _init, _max, add do
+		
+			-- check if a class not are defined to this memory
+			if not _G.__LONGBIT_CLASSES[i] then   pmem(i, 0)    end
+		
+		end
+	end
+	
 end
 
 
@@ -150,17 +170,29 @@ local function getClass(id)
 end
 
 
-	
+
+----- SWICTH -----	
+
+local function switchClass(newName, id, wasDefined)
+	-- check if the class was be defined
+	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swicthClass, argument #2.')
+
+	_G.__LONGBIT_CLASSES[id] = newName
+end
+
+
+
 ----- ADD TO TABLE -----
 	
 local longBit = {}
 
-longBit.setClass = setClass
-longBit.setMem   = setMem
-longBit.boot     = boot
-longBit.clear    = clear
-longBit.getNum   = getNum
-longBit.getBool  = getBool
-longBit.getClass = getClass
+longBit.setClass    = setClass
+longBit.setMem      = setMem
+longBit.boot        = boot
+longBit.clear       = clear
+longBit.getNum      = getNum
+longBit.getBool     = getBool
+longBit.getClass    = getClass
+longBit.switchClass = switchClass
 
 return longBit
