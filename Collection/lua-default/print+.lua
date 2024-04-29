@@ -32,7 +32,7 @@
 
 
 
------ TO PRINT FUNCTION -----
+----- X, Y, WIDTH, HEIGHT -----
 
 local function lenght( text, lines, fixed, size, small )
 	-- X
@@ -64,16 +64,25 @@ local function lenght( text, lines, fixed, size, small )
 	return scale * size, (6 * size) * lines
 end
 
-local function center( text, x, y, lines, fixed, size, small )
-	local x, y = x or 0, y or 0
+local function center( text, _x, _y, lines, fixed, size, small )
+	local x, y = _x or 0, _y or 0
 	
 	local width, height = lenght( text, lines, fixed, size, small )
 	
 	return x - width // 2 + 1, y - height // 2 + 1
 end
 
-local function list( text, x, y, color, space, fixed, size, small )
 
+
+----- PRINT FUNCTIONS -----
+
+local function pCenter( text, _x, _y, color, lines, fixed, size, small )
+	local x, y = center(text, _x, _y, lines, fixed, size, small)
+	
+	print(text, x, y, color, fixed, size or 1, small)
+end
+
+local function pList( text, x, y, color, space, fixed, size, small )
 	assert( type( text ) == "table", '[print+] Table (parameter) not specified. In function "pplus.list", argument #1' )
 	
 	local x, y = x or 0, y or 0
@@ -83,6 +92,94 @@ local function list( text, x, y, color, space, fixed, size, small )
 		print( tostring( text[i] ), x, y + space * (i - 1), color, fixed, size or 1, small )
 	end
 	
+end
+
+local function pShadow( txt, _x, _y, _color, shadow, fixed, _scale, smallfont )
+	local scale  = _scale or 1 -- default
+	local hyphen = "" -- this character: "-"
+	
+	local direction, color, distance, all = {}, {}, {}, {}
+	
+	-- convert values to number and if they are check valid
+	local function _error(value, name, id)
+		for i = 1, 3 do
+			value[i][id] = tonumber(value[i][id])
+			assert(type(value[i][id]) == "number",'[print+] "shadow" '..name[i]..' is NaN, in index "'..id..'". In function pplus.printShadow, argument #1.')
+		end
+	end
+	
+	-- position and adjust for them
+	local x, y = 0, 0 -- optional
+	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+	
+	assert(type(shadow) == "table", '[print+] "shadow" not is a table. In function pplus.printShadow, argument #1.')
+	assert(shadow[1] ~= nil, '[print+] "shadow" values not defined. In function pplus.printShadow, argument #1.')
+
+	-- load "shadow(s)"
+	local max = (#shadow <= 4) and #shadow or 4
+	for i = 1, max do
+		
+		-- obtain: direction, color and distance
+		for j = 1, 2 do
+			hyphen = string.find(shadow[i], "-")
+			if #shadow[i] > 0 and #shadow[i] <= 2 then hyphen = 0 end
+			assert(hyphen, '[print+] Hyphen not specified in index "'..i..'". In function pplus.printShadow, argument #1.')
+			
+			-- splits the strings
+			if j == 1 then
+				direction[i] = string.sub(shadow[i], 1, hyphen - 1)
+				shadow[i]    = string.sub(shadow[i], hyphen + 1, #shadow[i])
+			
+			else
+				color[i] = string.sub(shadow[i], 1, hyphen - 1)
+				
+				if hyphen == 0 then 
+					distance[i] = scale -- default
+				else
+					distance[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
+				end
+				
+			end
+			
+		end
+		
+		all = {direction, distance, color}
+		_error(all, {"direction", "distance", "color"}, i)
+		
+		-- minimum (0) and maximum (3) value to "direction" and "distance"
+		for l = 1, 2 do
+			all[l][i] = (all[l][i] < 0) and 0 or (all[l][i] > 3) and 3 or all[l][i]
+		end
+		
+		-- draw shadows
+		x = _x + less[direction[i]][1] * distance[i]
+		y = _y + less[direction[i]][2] * distance[i]
+		print(txt, x, y, color[i], fixed, scale, smallfont)
+	end
+	
+	-- draw original text
+	print(txt, _x, _y, _color, fixed, scale, smallfont)
+end
+
+local function pBoard( txt, _x, _y, color, _bcolor, _distance, fixed, _scale, smallfont )
+	-- position and adjust for them
+	local x, y = 0, 0 -- optional
+	local less = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+	
+	-- obitain values (specified or default)
+	local scale    = _scale    or 1
+	local bcolor   = _bcolor   or 15
+	local distance = _distance or scale
+	
+	-- draw boards
+	for i = 1, 4 do
+		x = _x + less[i][1] * distance
+		y = _y + less[i][2] * distance
+		print(txt, x, y, bcolor, fixed, scale, smallfont)
+	end
+	
+	-- draw original text
+	print(txt, _x, _y, color, fixed, scale, smallfont)
 end
 
 
@@ -136,88 +233,12 @@ end
 	
 local printPlus = {}
 	
-printPlus.lenght = lenght
-printPlus.center = center
-printPlus.list   = list
-printPlus.title  = title
+printPlus.lenght  = lenght
+printPlus.center  = center
+printPlus.pCenter = pCenter
+printPlus.pShadow = pShadow
+printPlus.pBoard  = pBoard
+printPlus.pList   = pList
+printPlus.title   = title
 
 return printPlus
-
--- TEMP
-
-local function printShadow(txt, _x, _y, _color, shadow, fixed, _scale, smallfont)
-	local scale, hyphen = _scale or 1, ""
-	local direction, color, distance, all = {}, {}, {}, {}
-	
-	-- related "shadow" strings
-	local function _error(value, name, id)
-		for i = 1, 3 do
-			assert(type(value[i][id]) == "number",'[print+] "shadow" '..name[i]..' is NaN, in index "'..id..'". In function pplus.printShadow, argument #1.')
-		end
-	end
-	
-	-- "shadow" values about position
-	local x, y = 0, 0
-	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}}
-	
-	assert(type(shadow) == "table", '[print+] "shadow" not is a table. In function pplus.printShadow, argument #1.')
-	assert(shadow[1] ~= nil, '[print+] "shadow" values not defined. In function pplus.printShadow, argument #1.')
-
-	-- load "shadow(s)"
-	local max = (#shadow <= 4) and #shadow or 4
-	for i = 1, max do
-		
-		-- find the "shadow" values
-		for j = 1, 2 do
-			hyphen = string.find(shadow[i], "-")
-			if #shadow[i] > 0 and #shadow[i] <= 2 then hyphen = 0 end
-			assert(hyphen, '[print+] Hyphen not specified in index "'..i..'". In function pplus.printShadow, argument #1.')
-			
-			if j == 1 then
-				direction[i] = string.sub(shadow[i], 1, hyphen - 1)
-				shadow[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
-			else
-				color[i] = string.sub(shadow[i], 1, hyphen - 1)
-				if hyphen == 0 then 
-					distance[i] = scale
-				else
-					distance[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
-				end
-			end
-		end
-		
-		direction[i] = tonumber(direction[i])
-		color[i] = tonumber(color[i])
-		distance[i] = tonumber(distance[i])
-		
-		all = {direction, distance, color}
-		_error(all, {"direction", "distance", "color"}, i)
-		
-		-- minimum and maximum value to "direction" and "distance"
-		for l = 1, 2 do
-			all[l][i] = (all[l][i] < 0) and 0 or (all[l][i] > 3) and 3 or all[l][i]
-		end
-		
-		x = _x + less[direction[i]][1] * distance[i]
-		y = _y + less[direction[i]][2] * distance[i]
-		print(txt, x, y, color[i], fixed, scale, smallfont)
-	end
-	
-	print(txt, _x, _y, _color, fixed, scale, smallfont)
-end
-
-local function printBoard(txt, _x, _y, color, _bcolor, _distance, fixed, _scale, smallfont)
-	local less = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
-	local scale = _scale or 1
-	local bcolor = _bcolor or 15
-	local distance = _distance or scale
-	local x, y = 0, 0
-	
-	for i = 1, 4 do
-		x = _x + less[i][1] * distance
-		y = _y + less[i][2] * distance
-		print(txt, x, y, bcolor, fixed, scale, smallfont)
-	end
-	
-	print(txt, _x, _y, color, fixed, scale, smallfont)
-end
