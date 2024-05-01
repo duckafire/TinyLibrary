@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 2.2
+-- VERSION: 3.2
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -85,8 +85,9 @@ local function pShadow(text, _x, _y, _color, shadow, fixed, _scale, smallfont, U
 	local scale  = _scale or 1 -- default
 	local hyphen = "" -- the character: "-"
 	
+	local funcList = ""
 	local funcName = '. In function pplus.printShadow, argument #1.'
-	if UsedBypList then funcName = funcName.." Called by lbit.pList." end
+	if UsedBypList then funcList = " (called by longBit.pList)" end
 	
 	local direction, color, distance, all = {}, {}, {}, {}
 	
@@ -94,7 +95,7 @@ local function pShadow(text, _x, _y, _color, shadow, fixed, _scale, smallfont, U
 	local function _error(value, name, id)
 		for i = 1, 3 do
 			value[i][id] = tonumber(value[i][id])
-			assert(type(value[i][id]) == "number",'[print+] "shadow" '..name[i]..' is NaN, in index "'..id..'"'..funcName)
+			assert(type(value[i][id]) == "number",'[print+] "shadow" '..name[i]..' is NaN, in index "'..id..'"'..funcList..funcName)
 		end
 	end
 	
@@ -102,8 +103,8 @@ local function pShadow(text, _x, _y, _color, shadow, fixed, _scale, smallfont, U
 	local x, y = 0, 0 -- optional
 	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 	
-	assert(type(shadow) == "table", '[print+] "shadow" not is a table'..funcName)
-	assert(shadow[1] ~= nil, '[print+] "shadow" values not defined'..funcName)
+	assert(type(shadow) == "table", '[print+] "shadow" not is a table'..funcList..funcName)
+	assert(shadow[1] ~= nil, '[print+] "shadow" values not defined'..funcList..funcName)
 
 	-- load "shadow(s)"
 	local max = (#shadow <= 4) and #shadow or 4
