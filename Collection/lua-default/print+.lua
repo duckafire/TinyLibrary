@@ -39,8 +39,7 @@ local function lenght(text, lines, fixed, size, small)
 	assert(type(text) == "string", '[print+] String (parameter) not specified. In function "pplus.lenght", argument #1')
 		
 	local scale = print(text, 0, 136)
-	
-	scale = small and scale - #text * 2 or scale-- 6x6 in normal font; 4x6 in small font (in most cases)
+	scale = (small) and scale - #text * 2 or scale-- 6x6 in normal font; 4x6 in small font (in most cases)
 	
 	if fixed then
 		for i = 1, #text do
@@ -173,38 +172,50 @@ local function pBoard(text, _x, _y, color, _bcolor, _distance, fixed, _scale, sm
 	print(text, _x, _y, color, fixed, scale, smallfont)
 end
 
-local function pList(text, x, y, color, space, fixed, size, small, effect)
+local function pList(text, _x, _y, color, space, fixed, size, small, inCenter, effect)
 	assert(type(text) == "table", '[print+] Table (parameter) not specified. In function "pplus.list", argument #1')
+	local backup = {} -- "effect" shadow (#2)
 	
-	local x, y = x or 0, y or 0
 	local color, space = color or 15, space or 10-- vertical spaces
 	
-	-- added center position, shadow effect or board effect to text in list
+	-- add shadow effect or board effect to text in list
 	if effect then
 		local funcName = '. In function pplus.pList, argument #9.'
 		
 		assert(type(effect) == "table", '[print+] "effect" is not a table'..funcName)
 		
-		assert(effect[1] == "center" or effect[1] == "shadow" or effect[1] == "board", '[print+] Type of "effect[1]" is unvalid, try "center", "shadow" or "board"'..funcName)
+		assert(effect[1] == "shadow" or effect[1] == "board", '[print+] Type of "effect[1]" is unvalid, try "shadow" or "board"'..funcName)
 		
 		if     effect[1] == "shadow" then
 			assert(type(effect[2]) == "table",  '[print+] "effect[2]" is not a table'..funcName)
+			for i = 1, #effect[2] do   backup[i] = effect[2][i]   end
+			
 		elseif effect[1] == "board"  then
-			assert(type(effect[2]) == "number", '[print+] "effect[2]" is not a NaN'..funcName)
-			assert(type(effect[3]) == "table",  '[print+] "effect[3]" is not a table'..funcName)
+			assert(type(effect[2]) == "number", '[print+] "effect[2]" is a NaN'..funcName)
 		end
 		
 	end
 	
+	local x, y = 0, 0
 	for i = 1, #text do
+		-- original positions
+		x = _x or 0
+		y = (_y or 0) + space * (i - 1)
+		
+		-- obtain center postions
+		if inCenter then x, y = center(text[i], x, y - #text, #text, fixed, size, small) end
+		
+		-- no effect
 		if not effect then
-			print(tostring(text[i]), x, y + space * (i - 1), color, fixed, size or 1, small)
+			print(tostring(text[i]), x, y, color, fixed, size or 1, small)
+		
+		-- with effect
 		else
-			if     effect[1] == "center" then pCenter(text, x, y, color, #text,                fixed, size, small      )
-			elseif effect[1] == "shadow" then pShadow(text, x, y, color, effect[2],            fixed, size, small, true)
-			elseif effect[1] == "board"  then pBoard( text, x, y, color, effect[2], effect[3], fixed, size, small      )
+			if     effect[1] == "shadow" then pShadow(text[i], x, y, color, effect[2],            fixed, size, small, true) for j = 1, #backup do   effect[2][j] = backup[j]   end
+			elseif effect[1] == "board"  then pBoard( text[i], x, y, color, effect[2], effect[3], fixed, size, small)
 			end
 		end
+		
 	end
 	
 end

@@ -48,13 +48,13 @@ local function classToId(id)-- memory index
 	end
 	
 	-- if no a "class" is not returned
-	error('[longBit] Undefined class: "'..d..'"')
+	error('[longBit] Undefined class: "'..tostring(id)..'"')
 end
 
 local function getArgs(funcName, argID, init, INIT, max, MAX)
 	local i = init or INIT
 	local m = max  or MAX
-	assert(i > m, '[longBit] The "max" value is less that "init". In function lbit.'..funcName..', argument #'..argID..'.')
+	assert(i <= m, '[longBit] The "max" value is less that "init". In function lbit.'..funcName..', argument #'..argID..'.')
 	return i, m
 end
 
@@ -64,11 +64,14 @@ end
 
 local function setClass(classes, _max, _init)
 	local init, max = getArgs("setClass", 2, _init, 0, _max, #classes - 1)
-	local id = 0
+	
+	assert(type(classes) == "table", '[longBit] Table not specified. In function "lbit.setClass", argument #1.')
 	
 	for i = init, max do
-		id = id + 1
-		_G.__LONGBIT_CLASSES[i] = classes[id]
+		assert(classes[i + 1] ~= "", '[longBit] Empty strings cannot used like class. In function "lbit.setClass", argument #1 (index: '..i..').')
+		assert(string.find(classes[i + 1], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
+		
+		_G.__LONGBIT_CLASSES[i] = classes[i + 1]
 	end
 end
 
@@ -113,13 +116,13 @@ local function boot(memID, force, _max, _init, empty)
 			errEnd   = '. In function lbit.boot, argument #1 (index: '..i..')'
 			
 			-- check if it is valid
-			assert(type(    memID[i + 1]) == "string",  errBegin..'not a string'..errMsg)
-			assert(tonumber(memID[i + 1]) ~= nil,       errBegin..'unvalid, because it own a NaN character'..errMsg)
-			assert(tonumber(memID[i + 1]) <= 999999999, errBegin..'too big, the maximum is "999999999"'..errMsg)
+			assert(type(    memID[i + 1]) == "string",  errBegin..'not a string'..errEnd)
+			assert(tonumber(memID[i + 1]) ~= nil,       errBegin..'unvalid, because it own a NaN character'..errEnd)
+			assert(tonumber(memID[i + 1]) <= 999999999, errBegin..'too big, the maximum is "999999999"'..errEnd)
 			
 			-- string to number
-			value = (memID[i + 1] ~= nil) and tonumber("2"..memID[i + 1]) or tonumber(memID[#memID])
-			
+			value = (memID[i + 1] ~= nil) and "2"..memID[i + 1] or memID[#memID]
+		
 			-- fill empty spaces
 			while #value < 10 do   value = value..(empty or "0")   end
 		
@@ -133,20 +136,20 @@ end
 
 local function clear(_type, _max, _init)
 	-- check if "_type" is valid
-	assert(_type == "all", _type == "memory" or _type == "classes" or _type == "lessClass", '[longBit] Keyword '.._type..' is invalid, try "all", "memory", "classes" or "lessClass". In function lbit.clear, argument #1.')
+	assert(_type == "all" or _type == "memory" or _type == "classes" or _type == "lessClass", '[longBit] Keyword '.._type..' is invalid, try "all", "memory", "classes" or "lessClass". In function lbit.clear, argument #1.')
 	local init, max = getArgs("clear", 2, _init, 0, _max, 255)
 	
-	if class == "memory" or class == "all" then
+	if _type == "memory" or _type == "all" then
 		for i = init, max do
 			pmem(i, 0)
 		end
 	end
 	
-	if class == "classes" or _type == "all" then
+	if _type == "classes" or _type == "all" then
 		_G.__LONGBIT_CLASSES = {}
 	end
 	
-	if class == "lessClass" then
+	if _type == "lessClass" then
 		for i = init, max do
 			-- check if a class not are defined to this memory
 			if not _G.__LONGBIT_CLASSES[i] then   pmem(i, 0)    end
@@ -159,19 +162,25 @@ end
 
 ----- GET VALUE -----
 
-local function getNum(itemID, className, lenght)
-	local _itemID = itemID + 1
-	local _lenght = lenght or 1
+local function getNum(_itemID, className, _lenght)
+	assert(_itemID > 0 and _itemID < 10, '[longBit] Index invalid, try values between 0-9. In function lbit.getNum, argument #1.')
+	
+	local itemID = _itemID + 1
+	local lenght = _lenght or 1
 	local pmemID  = classToId(className)
 	
-	return tonumber(string.sub(tostring(pmem(pmemID)), _itemID, _itemID + _lenght - 1))
+	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + lenght - 1))
 end
 
 local function getBool(itemID, className, equal)
+	assert(itemID > 0 and itemID < 10, '[longBit] Index invalid, try values between 0-9. In function lbit.getNum, argument #1.')
+	
 	return getNum(itemID, className) == (equal or 1)
 end
 
-local function getClass(id)
+local function getClass(id, wasDefined)
+	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] Classe not defined, index: '..id..'. In function lbit.getClass, argument #1.')
+
 	return _G.__LONGBIT_CLASSES[id]
 end
 
