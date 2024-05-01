@@ -51,23 +51,22 @@ local function classToId(id)-- memory index
 	error('[longBit] Undefined class: "'..d..'"')
 end
 
-local function getArgs(init, INIT, max, MAX)
-	local _init = init or INIT
-	local _max  = max  or MAX
-	local add   = (_init > _max) and -1 or 1
-	
-	return _init, _max, _add
+local function getArgs(funcName, argID, init, INIT, max, MAX)
+	local i = init or INIT
+	local m = max  or MAX
+	assert(i > m, '[longBit] The "max" value is less that "init". In function lbit.'..funcName..', argument #'..argID..'.')
+	return i, m
 end
 
 
 
 ----- SET VALUE -----
 
-local function setClass(classes, max, init)
-	local _init, _max, add = getArgs(init, 0, max, #classes - 1)
+local function setClass(classes, _max, _init)
+	local init, max = getArgs("setClass", 2, _init, 0, _max, #classes - 1)
 	local id = 0
 	
-	for i = _init, _max, add do
+	for i = init, max do
 		id = id + 1
 		_G.__LONGBIT_CLASSES[i] = classes[id]
 	end
@@ -102,19 +101,27 @@ local function setMem(newValue, itemID, className, lenght)
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function boot(memID, force, max, init, empty)
-	local _init, _max, add = getArgs(init, 0, max, #memID -1)
+local function boot(memID, force, _max, _init, empty)
+	local init, max = getArgs("boot", 3, _init, 0, _max, #memID -1)
+	local errBegin, errEnd = "", "" -- error messages
 	local value = ""
 	
-	for i = _init, _max, add do
+	for i = init, max do
 		if pmem(i) == 0 or force then
+			-- update error mensage
+			errBegin = '[longBit] The value "'..memID[i + 1]..'" is '
+			errEnd   = '. In function lbit.boot, argument #1 (index: '..i..')'
 			
-			-- add "joker" value
-			assert(memID[i + 1] <= 999999999, '[longBit] "'..memID[i + 1]..'" value is too big, the maximum is "999999999". In function lbit.boot, argument #1 (index: '..i..')')
-			value = "2"..tostring(memID[i + 1])
+			-- check if it is valid
+			assert(type(    memID[i + 1]) == "string",  errBegin..'not a string'..errMsg)
+			assert(tonumber(memID[i + 1]) ~= nil,       errBegin..'unvalid, because it own a NaN character'..errMsg)
+			assert(tonumber(memID[i + 1]) <= 999999999, errBegin..'too big, the maximum is "999999999"'..errMsg)
+			
+			-- string to number
+			value = (memID[i + 1] ~= nil) and tonumber("2"..memID[i + 1]) or tonumber(memID[#memID])
 			
 			-- fill empty spaces
-			while #value < 10 do value = value..(empty or "0") end
+			while #value < 10 do   value = value..(empty or "0")   end
 		
 			-- save in persistent memory
 			pmem(i, tonumber(value))
@@ -124,14 +131,15 @@ local function boot(memID, force, max, init, empty)
 	
 end
 
-local function clear(_type, max, init)
+local function clear(_type, _max, _init)
 	-- check if "_type" is valid
 	assert(_type == "all", _type == "memory" or _type == "classes" or _type == "lessClass", '[longBit] Keyword '.._type..' is invalid, try "all", "memory", "classes" or "lessClass". In function lbit.clear, argument #1.')
+	local init, max = getArgs("clear", 2, _init, 0, _max, 255)
 	
 	if class == "memory" or class == "all" then
-		local _init, _max, add = getArgs(init, 0, max, 255)
-
-		for i = _init, _max, add do   pmem(i, 0)   end
+		for i = init, max do
+			pmem(i, 0)
+		end
 	end
 	
 	if class == "classes" or _type == "all" then
@@ -139,11 +147,9 @@ local function clear(_type, max, init)
 	end
 	
 	if class == "lessClass" then
-		for i = _init, _max, add do
-		
+		for i = init, max do
 			-- check if a class not are defined to this memory
 			if not _G.__LONGBIT_CLASSES[i] then   pmem(i, 0)    end
-		
 		end
 	end
 	
@@ -173,7 +179,7 @@ end
 
 ----- SWICTH -----	
 
-local function switchClass(newName, id, wasDefined)
+local function swapClass(newName, id, wasDefined)
 	-- check if the class was be defined
 	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swicthClass, argument #2.')
 
@@ -186,13 +192,13 @@ end
 	
 local longBit = {}
 
-longBit.setClass    = setClass
-longBit.setMem      = setMem
-longBit.boot        = boot
-longBit.clear       = clear
-longBit.getNum      = getNum
-longBit.getBool     = getBool
-longBit.getClass    = getClass
-longBit.switchClass = switchClass
+longBit.setClass  = setClass
+longBit.setMem    = setMem
+longBit.boot      = boot
+longBit.clear     = clear
+longBit.getNum    = getNum
+longBit.getBool   = getBool
+longBit.getClass  = getClass
+longBit.swapClass = swapClass
 
 return longBit
