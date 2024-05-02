@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 1.2
+-- VERSION: 2.2
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
