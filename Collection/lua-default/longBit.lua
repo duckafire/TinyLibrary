@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 2.2
+-- VERSION: 2.3
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -64,6 +64,7 @@ end
 
 local function setClass(classes, _max, _init)
 	local init, max = getArgs("setClass", 2, _init, 0, _max, #classes - 1)
+	local id = 0
 	
 	assert(type(classes) == "table", '[longBit] Table not specified. In function "lbit.setClass", argument #1.')
 	
@@ -71,7 +72,8 @@ local function setClass(classes, _max, _init)
 		assert(classes[i + 1] ~= "", '[longBit] Empty strings cannot used like class. In function "lbit.setClass", argument #1 (index: '..i..').')
 		assert(string.find(classes[i + 1], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
 		
-		_G.__LONGBIT_CLASSES[i] = classes[i + 1]
+		id = id + 1
+		_G.__LONGBIT_CLASSES[i] = classes[id]
 	end
 end
 
@@ -179,9 +181,13 @@ local function getBool(itemID, className, equal)
 end
 
 local function getClass(id, wasDefined)
-	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] Classe not defined, index: '..id..'. In function lbit.getClass, argument #1.')
+	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] Class not defined, index: '..id..'. In function lbit.getClass, argument #1.')
 
 	return _G.__LONGBIT_CLASSES[id]
+end
+
+local function showMem(class)
+	return pmem(classToId(class))
 end
 
 

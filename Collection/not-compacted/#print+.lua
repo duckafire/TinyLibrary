@@ -20,7 +20,7 @@
 -- 3. This notice may not be removed or altered from any source distribution.
 ----------------------------------------------------------------------------------
 
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 3.2]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 3.3]
 
 local printPlus = {}
 local DA_LICENSE  = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -217,7 +217,7 @@ do
 	----- USE SPRITES -----
 
 	local function title(sprites, X, Y, dimensions, space, size, chromaKey, vertical)
-		assert(type(sprites) == "table", '[print+] Table (parameter) not specified. In function "pplus.title", argument #1')
+		assert(type(sprites) == "table", '[print+] Table "sprites" not specified. In function "pplus.title", argument #1')
 		
 		local back-- table to store the chromaKey colors
 		

@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 3.2
+-- VERSION: 3.3
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -226,7 +226,7 @@ end
 ----- USE SPRITES -----
 
 local function title(sprites, X, Y, dimensions, space, size, chromaKey, vertical)
-	assert(type(sprites) == "table", '[print+] Table (parameter) not specified. In function "pplus.title", argument #1')
+	assert(type(sprites) == "table", '[print+] Table "sprites" not specified. In function "pplus.title", argument #1')
 	
 	local back-- table to store the chromaKey colors
 	

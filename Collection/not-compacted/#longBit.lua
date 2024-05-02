@@ -20,7 +20,7 @@
 -- 3. This notice may not be removed or altered from any source distribution.
 ----------------------------------------------------------------------------------
 
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.2]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.3]
 
 local longBit = {}
 local DA_LICENSE = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
@@ -54,6 +54,7 @@ do
 
 	local function setClass(classes, _max, _init)
 		local init, max = getArgs("setClass", 2, _init, 0, _max, #classes - 1)
+		local id = 0
 		
 		assert(type(classes) == "table", '[longBit] Table not specified. In function "lbit.setClass", argument #1.')
 		
@@ -61,7 +62,8 @@ do
 			assert(classes[i + 1] ~= "", '[longBit] Empty strings cannot used like class. In function "lbit.setClass", argument #1 (index: '..i..').')
 			assert(string.find(classes[i + 1], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
 			
-			_G.__LONGBIT_CLASSES[i] = classes[i + 1]
+			id = id + 1
+			_G.__LONGBIT_CLASSES[i] = classes[id]
 		end
 	end
 
@@ -167,11 +169,19 @@ do
 	end
 
 	local function getClass(id, wasDefined)
-		assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] Classe not defined, index: '..id..'. In function lbit.getClass, argument #1.')
+		assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] Class not defined, index: '..id..'. In function lbit.getClass, argument #1.')
 
 		return _G.__LONGBIT_CLASSES[id]
 	end
 
+	local function showMem(class)
+		return pmem(classToId(class))
+	end
+	
+	local function showMem(class)
+		return pmem(classToId(class))
+	end
+	
 	----- SWICTH -----	
 
 	local function swapClass(newName, id, wasDefined)
