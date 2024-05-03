@@ -106,13 +106,18 @@ local function setMem(newValue, itemID, className, lenght)
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function setAll(newValue, className)
+local function setAll(newValue, className, itself)
+	local value  = newValue
 	local pmemID = classToId("setAll", 2, className)
+
+	local it = 0
+	if itself then it = pmem(pmemID) end
+	value = value + it
 
 	assert(value >= 0,        "[longBit] The value specified is too small. In function longBit.setAll, argument #1.")
 	assert(value <= 4294967295, "[longBit] The value specified is too big. In function longBit.setAll, argument #1.")
 	
-	pmem(pmemID, newValue)
+	pmem(pmemID, value)
 end
 
 local function boot(memID, force, _max, _init, empty)
