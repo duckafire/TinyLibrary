@@ -34,17 +34,17 @@
 
 ----- GLOBAL -----
 
-_G.__LONGBIT_CLASSES = {}-- "_G" to explicity a global table (or variable)
+local LBC = {} -- Long-Bit-Classes
 
 
 
 ----- INTERNAL -----
 
 local function classToId(id)-- memory index
-	assert(_G.__LONGBIT_CLASSES[0]~=nil, "[longBit] pmem classes not defined.")
+	assert(LBC[0]~=nil, "[longBit] pmem classes not defined.")
 
-	for i = 0, #_G.__LONGBIT_CLASSES do
-		if id == _G.__LONGBIT_CLASSES[i] then return i end
+	for i = 0, #LBC do
+		if id == LBC[i] then return i end
 	end
 	
 	-- if no a "class" is not returned
@@ -73,7 +73,7 @@ local function setClass(classes, _max, _init)
 		assert(string.find(classes[i + 1], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
 		
 		id = id + 1
-		_G.__LONGBIT_CLASSES[i] = classes[id]
+		LBC[i] = classes[id]
 	end
 end
 
@@ -148,13 +148,13 @@ local function clear(_type, _max, _init)
 	end
 	
 	if _type == "classes" or _type == "all" then
-		_G.__LONGBIT_CLASSES = {}
+		LBC = {}
 	end
 	
 	if _type == "lessClass" then
 		for i = init, max do
 			-- check if a class not are defined to this memory
-			if not _G.__LONGBIT_CLASSES[i] then   pmem(i, 0)    end
+			if not LBC[i] then   pmem(i, 0)    end
 		end
 	end
 	
@@ -181,9 +181,9 @@ local function getBool(itemID, className, equal)
 end
 
 local function getClass(id, wasDefined)
-	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] Class not defined, index: '..id..'. In function lbit.getClass, argument #1.')
+	assert(not wasDefined or LBC[id], '[longBit] Class not defined, index: '..id..'. In function lbit.getClass, argument #1.')
 
-	return _G.__LONGBIT_CLASSES[id]
+	return LBC[id]
 end
 
 local function showMem(class)
@@ -196,9 +196,9 @@ end
 
 local function swapClass(newName, id, wasDefined)
 	-- check if the class was be defined
-	assert(not wasDefined or _G.__LONGBIT_CLASSES[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swicthClass, argument #2.')
+	assert(not wasDefined or LBC[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swicthClass, argument #2.')
 
-	_G.__LONGBIT_CLASSES[id] = newName
+	LBC[id] = newName
 end
 
 
