@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 2.3
+-- VERSION: 2.4
 
 ----- FOLLOW_ME -----
 -- Itch:     http://duckafire.itch.io
@@ -40,21 +40,21 @@ local LBC = {} -- Long-Bit-Classes
 
 ----- INTERNAL -----
 
-local function classToId(id)-- memory index
-	assert(LBC[0]~=nil, "[longBit] pmem classes not defined.")
+local function classToId(funcName, argID, id)-- memory index
+	assert(LBC[0]~=nil, '[longBit] pmem classes not defined. In function longBit.'..funcName..', argument #'..argID..'.')
 
 	for i = 0, #LBC do
 		if id == LBC[i] then return i end
 	end
 	
 	-- if no a "class" is not returned
-	error('[longBit] Undefined class: "'..tostring(id)..'"')
+	error('[longBit] Undefined class: "'..id..'. In function longBit.'..funcName..', argument #'..argID..'.')
 end
 
 local function getArgs(funcName, argID, init, INIT, max, MAX)
 	local i = init or INIT
 	local m = max  or MAX
-	assert(i <= m, '[longBit] The "max" value is less that "init". In function lbit.'..funcName..', argument #'..argID..'.')
+	assert(i <= m, '[longBit] The "max" value is less that "init". In function longBit.'..funcName..', argument #'..argID..'.')
 	return i, m
 end
 
@@ -78,7 +78,7 @@ local function setClass(classes, _max, _init)
 end
 
 local function setMem(newValue, itemID, className, lenght)
-	local pmemID  = classToId(className)
+	local pmemID  = classToId("setMem", 3, className)
 	local _itemID = itemID + 1
 	local _lenght = lenght or 1
 	local value   = nil
@@ -104,6 +104,15 @@ local function setMem(newValue, itemID, className, lenght)
 	local front  = convert(_itemID + _lenght)
 	
 	pmem(pmemID, tonumber(back..value..front))
+end
+
+local function setAll(newValue, className)
+	local pmemID = classToId("setAll", 2, className)
+
+	assert(value >= 0,        "[longBit] The value specified is too small. In function longBit.setAll, argument #1.")
+	assert(value <= 4294967295, "[longBit] The value specified is too big. In function longBit.setAll, argument #1.")
+	
+	pmem(pmemID, newValue)
 end
 
 local function boot(memID, force, _max, _init, empty)
@@ -169,7 +178,7 @@ local function getNum(_itemID, className, _lenght)
 	
 	local itemID = _itemID + 1
 	local lenght = _lenght or 1
-	local pmemID  = classToId(className)
+	local pmemID  = classToId("getNum", 2, className)
 	
 	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + lenght - 1))
 end
@@ -186,8 +195,10 @@ local function getClass(id, wasDefined)
 	return LBC[id]
 end
 
-local function showMem(class)
-	return pmem(classToId(class))
+local function showMem(className)
+	local pmemID = classToId("showMem", 1, className)
+
+	return pmem(pmemID)
 end
 
 
@@ -215,5 +226,7 @@ longBit.getNum    = getNum
 longBit.getBool   = getBool
 longBit.getClass  = getClass
 longBit.swapClass = swapClass
+longBit.showMem   = showMem
+longBit.setAll    = setAll
 
 return longBit

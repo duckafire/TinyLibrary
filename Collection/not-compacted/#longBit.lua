@@ -20,33 +20,33 @@
 -- 3. This notice may not be removed or altered from any source distribution.
 ----------------------------------------------------------------------------------
 
--- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.3]
+-- [NOT COMPACTED] Copy and paste the code in your cart [v: 2.4]
 
 local longBit = {}
 local DA_LICENSE = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There's no need to copy "DA_LICENSE" if they are already in the code.
 
 do
 	----- GLOBAL -----
-	
+
 	local LBC = {} -- Long-Bit-Classes
 
 	----- INTERNAL -----
 
-	local function classToId(id)-- memory index
-		assert(LBC[0]~=nil, "[longBit] pmem classes not defined.")
+	local function classToId(funcName, argID, id)-- memory index
+		assert(LBC[0]~=nil, '[longBit] pmem classes not defined. In function longBit.'..funcName..', argument #'..argID..'.')
 
 		for i = 0, #LBC do
 			if id == LBC[i] then return i end
 		end
 		
 		-- if no a "class" is not returned
-		error('[longBit] Undefined class: "'..tostring(id)..'"')
+		error('[longBit] Undefined class: "'..id..'. In function longBit.'..funcName..', argument #'..argID..'.')
 	end
 
 	local function getArgs(funcName, argID, init, INIT, max, MAX)
 		local i = init or INIT
 		local m = max  or MAX
-		assert(i <= m, '[longBit] The "max" value is less that "init". In function lbit.'..funcName..', argument #'..argID..'.')
+		assert(i <= m, '[longBit] The "max" value is less that "init". In function longBit.'..funcName..', argument #'..argID..'.')
 		return i, m
 	end
 
@@ -68,7 +68,7 @@ do
 	end
 
 	local function setMem(newValue, itemID, className, lenght)
-		local pmemID  = classToId(className)
+		local pmemID  = classToId("setMem", 3, className)
 		local _itemID = itemID + 1
 		local _lenght = lenght or 1
 		local value   = nil
@@ -94,6 +94,15 @@ do
 		local front  = convert(_itemID + _lenght)
 		
 		pmem(pmemID, tonumber(back..value..front))
+	end
+
+	local function setAll(newValue, className)
+		local pmemID = classToId("setAll", 2, className)
+
+		assert(value >= 0,        "[longBit] The value specified is too small. In function longBit.setAll, argument #1.")
+		assert(value <= 4294967295, "[longBit] The value specified is too big. In function longBit.setAll, argument #1.")
+		
+		pmem(pmemID, newValue)
 	end
 
 	local function boot(memID, force, _max, _init, empty)
@@ -157,7 +166,7 @@ do
 		
 		local itemID = _itemID + 1
 		local lenght = _lenght or 1
-		local pmemID  = classToId(className)
+		local pmemID  = classToId("getNum", 2, className)
 		
 		return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + lenght - 1))
 	end
@@ -174,14 +183,12 @@ do
 		return LBC[id]
 	end
 
-	local function showMem(class)
-		return pmem(classToId(class))
+	local function showMem(className)
+		local pmemID = classToId("showMem", 1, className)
+
+		return pmem(pmemID)
 	end
-	
-	local function showMem(class)
-		return pmem(classToId(class))
-	end
-	
+
 	----- SWICTH -----	
 
 	local function swapClass(newName, id, wasDefined)
@@ -192,14 +199,19 @@ do
 	end
 
 	----- ADD TO TABLE -----
+		
+	local longBit = {}
 
-	longBit.setClass = setClass
-	longBit.setMem   = setMem
-	longBit.boot     = boot
-	longBit.clear    = clear
-	longBit.getNum   = getNum
-	longBit.getBool  = getBool
-	longBit.getClass = getClass
+	longBit.setClass  = setClass
+	longBit.setMem    = setMem
+	longBit.boot      = boot
+	longBit.clear     = clear
+	longBit.getNum    = getNum
+	longBit.getBool   = getBool
+	longBit.getClass  = getClass
+	longBit.swapClass = swapClass
+	longBit.showMem   = showMem
+	longBit.setAll    = setAll
 
 end
 
