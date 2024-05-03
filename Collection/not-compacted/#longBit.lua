@@ -28,15 +28,16 @@ local DA_LICENSE = "github.com/DuckAfire/TinyLibrary/blob/main/LICENSE"-- There'
 do
 	----- GLOBAL -----
 
-	local LBC = {} -- Long-Bit-Classes
+	local LBC = {} -- LongBit-Classes
+	local CID = {} -- Classes-InDex
 
 	----- INTERNAL -----
 
 	local function classToId(funcName, argID, id)-- memory index
 		assert(LBC[0]~=nil, '[longBit] pmem classes not defined. In function longBit.'..funcName..', argument #'..argID..'.')
 
-		for i = 0, #LBC do
-			if id == LBC[i] then return i end
+		for i = 0, #CID do
+			if id == LBC[CID[i]] then return i end
 		end
 		
 		-- if no a "class" is not returned
@@ -54,16 +55,24 @@ do
 
 	local function setClass(classes, _max, _init)
 		local init, max = getArgs("setClass", 2, _init, 0, _max, #classes - 1)
-		local id = 0
+		local addToCID = nil
+		local id = 1
 		
 		assert(type(classes) == "table", '[longBit] Table not specified. In function "lbit.setClass", argument #1.')
 		
 		for i = init, max do
-			assert(classes[i + 1] ~= "", '[longBit] Empty strings cannot used like class. In function "lbit.setClass", argument #1 (index: '..i..').')
-			assert(string.find(classes[i + 1], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
+			assert(classes[id] ~= "", '[longBit] Empty strings cannot used like class. In function "lbit.setClass", argument #1 (index: '..i..').')
+			assert(string.find(classes[id], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
 			
-			id = id + 1
 			LBC[i] = classes[id]
+			id = id + 1
+		
+			addToCID = true
+			for j = 1, #CID do
+				if CID[j] == i then addToCID = false end
+			end
+			
+			if addToCID then table.insert(CID, i) end
 		end
 	end
 
@@ -110,12 +119,15 @@ do
 		pmem(pmemID, value)
 	end
 
-	local function boot(memID, force, _max, _init, empty)
-		local init, max = getArgs("boot", 3, _init, 0, _max, #memID -1)
+	local function boot(memID, force, _init, empty)
+		local init = getArgs("boot", 3, _init, 0, 1, 0)
 		local errBegin, errEnd = "", "" -- error messages
 		local value = ""
 		
-		for i = init, max do
+		assert(#memID <= 256, '[longBit] The table specified is bigger that 256. In function longBit.boot, argument #1.')
+		assert(init + #memID -1 <= 255, '[longBit] The value result addition of '..init..' (#3) with '..#memID..' (#1) is bigger of 256. In function longBit.boot, argument #3.')
+		
+		for i = init, #memID - 1 do
 			if pmem(i) == 0 or force then
 				-- update error mensage
 				errBegin = '[longBit] The value "'..memID[i + 1]..'" is '
@@ -126,15 +138,14 @@ do
 				assert(tonumber(memID[i + 1]) ~= nil,       errBegin..'unvalid, because it own a NaN character'..errEnd)
 				assert(tonumber(memID[i + 1]) <= 999999999, errBegin..'too big, the maximum is "999999999"'..errEnd)
 				
-				-- string to number
-				value = (memID[i + 1] ~= nil) and "2"..memID[i + 1] or memID[#memID]
+				-- add joker
+				value = "2"..memID[i + 1]
 			
 				-- fill empty spaces
 				while #value < 10 do   value = value..(empty or "0")   end
 			
 				-- save in persistent memory
 				pmem(i, tonumber(value))
-			
 			end
 		end
 		
@@ -188,18 +199,20 @@ do
 		return LBC[id]
 	end
 
-	local function showMem(className)
-		local pmemID = classToId("showMem", 1, className)
+	local function getAll(className)
+		local pmemID = classToId("getAll", 1, className)
 
 		return pmem(pmemID)
 	end
 
-	----- SWICTH -----	
+	----- SWAP -----	
 
 	local function swapClass(newName, id, wasDefined)
 		-- check if the class was be defined
-		assert(not wasDefined or LBC[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swicthClass, argument #2.')
-
+		assert(not wasDefined or LBC[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swapClass, argument #2.')
+		
+		assert(type(newName) == "string", '[longBit] "newValue" is not a string. In function lbit.swapClass, argument #1')
+	
 		LBC[id] = newName
 	end
 
@@ -215,7 +228,7 @@ do
 	longBit.getBool   = getBool
 	longBit.getClass  = getClass
 	longBit.swapClass = swapClass
-	longBit.showMem   = showMem
+	longBit.getAll   = getAll
 	longBit.setAll    = setAll
 
 end
