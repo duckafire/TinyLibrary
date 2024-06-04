@@ -1,23 +1,24 @@
+<div align="center">
+	<img src="https://github.com/duckafire/TinyLibrary/blob/main/tinylibrary-icon.png" width="200">
+</div>
+
+<br>
+
 # Tiny Library
-It is a free and open-source **Libraries Collection**, created by [Duckafire](https://github.com/duckafire "GitHub"). <br>
-This collection contains libraries created specifically for use on the fantasy computer/console [Tic80](https://tic80.com "Official Site"),
-with the main objective to facilitate the creation of *tiny* games.
+&emsp; It is a free and open-source **Libraries Collection**, created for to easily the creation of new cartridges to the [Tic80 Tiny Computer](https://tic80.com "Official site").
 
-* ###### [How to use libraries on Tic80?](https://github.com/duckafire/TinyLibrary/wiki "Work in Progress")
+<br>
 
-### Currently, this collection has the next libraries:
-| Libraries     | Short description                                     |
-| :-:           | :-:                                                   |
-| coli2DA       | Check collisions between objects                      |
-| print+        | To facilitate the manipulation of text objects        |
-| Magic_Palette | Change the color palette at run time                  |
-| longBit       | Use the memory of a single "pmem" for multiple things |
-| ============= | Comming soon                                          |
+### About project
+* [Wiki](https://github.com/duckafire/TinyLibrary/wiki "Official wiki")
+* [Libraries list](https://github.com/duckafire/TinyLibrary/tree/main/collection "List of libraries present in collection")
+* [See TinyLibrary cartridge](https://tic80.com/play?cart=3288 "Avaliable in tic80.com")
+* [LIM: **L**ua L**i**brary Co**m**pactor](https://github.com/duckafire/LIM "Library compactor used in libraries")
 
-* ###### [See the Wiki](https://github.com/duckafire/TinyLibrary/wiki "Official Wiki").
+<br>
 
-## Follow me in my social media:
-* [Facebook](https://facebook.com/duckafire "My Facebook page")  
-* [Itch.io](https://duckafire.itch.io "I will post games here")  
-* [GitHub](https://github.com/duckafire "See my other repositories")
-* [Tic80](https://tic80.com/dev?id=8700 "Dev. 8700 (dev?id=8700)")
+### Follow the duck:
+* [Tic80](https://tic80.com/dev?id=8700)
+* [Itch.io](https://duckafire.itch.io)  
+* [GitHub](https://github.com/duckafire)
+* [Facebook](https://facebook.com/duckafire)
