@@ -1,4 +1,4 @@
-# About original files
+## About original files
 &emsp; These are the first files that give origin to the compacted files. You can use them for your studies, already the Tic80 cannot support the use of `require`.
 
 <br>

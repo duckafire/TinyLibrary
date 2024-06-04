@@ -1,10 +1,12 @@
 <div align="center">
-	<img src="https://github.com/duckafire/TinyLibrary/blob/main/tinylibrary-icon.png" width="200">
+	<img src="https://github.com/duckafire/TinyLibrary/blob/main/tinylibrary-icon.png" width="300">
+	<p>
+   		<a href=""><img alt="Last release" src="https://img.shields.io/badge/Last%20release-v1.3.0-%2325a319"/></a>
+    	<a href=""><img alt="License" src="https://img.shields.io/badge/License-MIT-%23a61f82"/></a>
+    	<a href=""><img alt="Libraries" src="https://img.shields.io/badge/Libraries-x4-%dd410d"/></a>
+    </p>
 </div>
 
-<br>
-
-# Tiny Library
 &emsp; It is a free and open-source **Libraries Collection**, created for to easily the creation of new cartridges to the [Tic80 Tiny Computer](https://tic80.com "Official site").
 
 <br>

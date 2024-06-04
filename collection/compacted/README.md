@@ -1,4 +1,4 @@
-# How to use
+## How to use
 1. Download the library (optional).
 2. Copy the content (commentaries are optional).
 3. Paste the code in top of your cartridge (after the *head comments*).
