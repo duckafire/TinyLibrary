@@ -1,9 +1,9 @@
 <div align="center">
 	<img src="https://github.com/duckafire/TinyLibrary/blob/main/tinylibrary-icon.png" width="300">
 	<p>
-   		<a href=""><img alt="Last release" src="https://img.shields.io/badge/Last%20release-v1.3.0-%2325a319"/></a>
-    	<a href=""><img alt="License" src="https://img.shields.io/badge/License-MIT-%23a61f82"/></a>
-    	<a href=""><img alt="Libraries" src="https://img.shields.io/badge/Libraries-x4-%dd410d"/></a>
+		<a><img alt="Last release" src="https://img.shields.io/badge/Last%20release-v1.3.0-%2325a319"/></a>
+		<a><img alt="License" src="https://img.shields.io/badge/License-MIT-%23a61f82"/></a>
+		<a><img alt="Libraries" src="https://img.shields.io/badge/Libraries-x4-%0f99dd"/></a>
     </p>
 </div>
 

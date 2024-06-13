@@ -1,1 +1,4 @@
-Pack/
+collection/original/head.txt
+collection/compacted/*.lua
+collection/original/*.limfile
+wiki
