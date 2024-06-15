@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 3.0.0
+-- VERSION: 3.0.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -266,12 +266,13 @@ local function LIB_impactPixel(...)-- two any bodies; collision type
 		local newMixB = {  x = mixB.x + mixB.width / 2,   y = mixB.y + mixB.height / 2,   radius = (mixB.width + mixB.height) / 2  }
 		
 		return LIB_impactPixel(newMixA, newMixB, CI, true)-- "tranform" all in circles 0o0
+	end
 	
-	elseif arg[lastArg] == CI then
+	if arg[tID] == CI then
 		if not arg[tID + 1] and not LIB_circle(mixA, mixB) then return nil, nil end
 
 		local x = (mixA.x * mixB.radius) + (mixB.x * mixA.radius)
-		local y = (mixA.y * mixB.radius) + (mixB.y * mixA.radius) 
+		local y = (mixA.y * mixB.radius) + (mixB.y * mixA.radius)
 		local totalRadius = (mixA.radius + mixB.radius)
 	
 		return x / totalRadius, y / totalRadius
