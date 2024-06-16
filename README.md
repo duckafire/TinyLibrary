@@ -3,7 +3,7 @@
 	<p>
 		<a><img alt="Last release" src="https://img.shields.io/badge/Last%20release-v1.3.0-%2325a319"/></a>
 		<a><img alt="License" src="https://img.shields.io/badge/License-MIT-%23a61f82"/></a>
-		<a><img alt="Libraries" src="https://img.shields.io/badge/Libraries-x4-%0f99dd"/></a>
+		<a><img alt="Libraries" src="https://img.shields.io/badge/Libraries-x4-%235294e5"/></a>
     </p>
 </div>
 
