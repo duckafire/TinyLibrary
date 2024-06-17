@@ -1,27 +1,18 @@
 -- NAME:    Magic Pallete
 -- AUTHOR:  DuckAfire
--- VERSION: 1.2
-
------ FOLLOW_ME -----
--- Itch:     http://duckafire.itch.io
--- GitHub:   http://github.com/duckafire
--- Tic80:    http://tic80.com/dev?id=8700
--- Facebook: http://facebook.com/duckafire
-
------ LICENSE -----
-
--- Zlib License
-
--- Copyright (C) 2024 DuckAfire <facebook.com/duckafire>
-  
+-- VERSION: 2.0.0
+-- LICENSE: Zlib License
+--
+-- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
+--
 -- This software is provided 'as-is', without any express or implied
 -- warranty. In no event will the authors be held liable for any damages
 -- arising from the use of this software.
-
+--
 -- Permission is granted to anyone to use this software for any purpose,
 -- including commercial applications, and to alter it and redistribute it
 -- freely, subject to the following restrictions:
-  
+--
 -- 1. The origin of this software must not be misrepresented; you must not
 --    claim that you wrote the original software. If you use this software
 --    in a product, an acknowledgment in the product documentation would be
@@ -32,172 +23,174 @@
 
 
 
+----- CONSTANTS -----
+
+local AD = 0x03fc0-- ADdress
+
+
+
 ----- ABOUT PALETTE CODE -----
 
-local function sortCode(code, order, low)
-	local ord, _code, c = order or 0, {}, nil-- type of return; colors; to return
-	
-	-- HEXADECIMAL CODE
-	if type(_code) == "string" then
-		local temp = _code
-		for i = #temp + 1, 6 do temp = temp.."0" end-- fill void spaces
+local function LIB_sort(orgCode, order, low)
+	local code = {}
+	order = order or 0 -- return format
+
+	-- hexadecimal code
+	if     type(orgCode) == "string" then
+		local temp = orgCode.."000000" -- fill (possible) void spaces
+		local char = low and string.lower or string.upper
 		
-		local id    = {1, 3, 5}
-		local _font = low and string.lower or string.upper
-		for i = 1, 3 do _code[i] = _font(string.sub(temp, id[i], id[i] + 1)) end
-	
-	-- DECIMAL CODE
+		for i = 1, 5, 2 do   code[#code + 1] = char(string.sub(temp, i, i + 1))   end
+
+	elseif type(orgCode) == "table"  then
+		code = orgCode
+
 	else
-		_code = code
+		assert(code ~= nil, '\n\n[Magic_Palette]\n"code" not specififed.\nFunction: "sortCode"\nParameter: #1\n')
 	end
-	
-	for i = 1, 3 do if not _code[i] then _code[i] = 0 end end-- fill void spaces
-	
+
+	-- fill void spaces
+	for i = 1, 3 do
+		if not code[i] then   code[i] = 0   end
+	end
+
 	-- RETURN TYPES
-	if ord == 0 then-- 3 arg to 3 var
-		return _code[1], _code[2], _code[3]
+	if order == 0 then   return code[1], code[2], code[3]                          end -- x3 values
+	if order == 1 then   return code                                               end -- table
+	if order == 2 then   return {red = code[1], green = code[2], blue = code[3]}   end -- a table with "structure"
 	
-	elseif ord == 1 then-- a array (table)
-		c = _code
-	
-	elseif ord == 2 then-- a table with "structure"
-		c = {red = _code[1], green = _code[2], blue = _code[3]}
-	
-	elseif ord == 3 then-- string
-		if hex then
-			c = "#".._code[1].._code[2].._code[3]-- hexadecimal
-		else
-			c = _code[1]..", ".._code[2]..", ".._code[3]-- decimal
-		end
-	else
-		error('[Magic_Palette] The parameter "order" is invalid, try values between 0-3. In function "pale.sortCode", argument #2.')
+	if order == 3 then -- string
+		if hex then   return "#"..code[1]..code[2]..code[3]   end -- hexadecimal
+		
+		return code[1]..", "..code[2]..", "..code[3] -- decimal
 	end
-	
-	return c
+
+	error('\n\n[Magic_Palette]\nUnvalid "order".\nTry values between zero and three.\nFunction: "sortCode"\nParameter: #2\n')
 end
 
-local function save(hex)
-	local var
+local function LIB_save(hex)
+	local code = {}
 	
-	if hex then   var = ""   else   var = {}   end
+	if hex then   code = ""   end
 	
-	for i = 0, 15 do	
-		if not hex then var[i] = {} end
+	for i = 0, 15 do
+		if not hex then code[i] = {} end
 		
 		for j = 0, 2 do
 			if hex then
-				var = var..string.format("%x", peek(0x03FC0 + i * 3 + j))-- hexadecimal
+				code = code..string.format("%x", peek(AD + i * 3 + j)) -- hexadecimal (string)
 			else
-				var[i][j] = peek(0x03FC0 + i * 3 + j)-- decimal (in sub-tables)
+				code[i][j] = peek(AD + i * 3 + j) -- decimal (sub-tables)
 			end
 		end
 	
 	end
 
-	return var
+	return code
 end
 
 
 
 ----- CONVERSION -----
 
-local function toDec(_code, order)
+local function LIB_toDec(code, order)
 	local inDeci = {}
 	
-	local code
-	code = type(_code) == "table" and _code[1] or _code
-	code = string.sub(code, 1, 1) == "#" and string.sub(code, 2) or code-- remove "#"
+	code = type(code) == "table" and code[1] or code
+	code = string.sub(code, 1, 1) == "#" and string.sub(code, 2) or code -- remove "#"
 	
+	local lcl
 	for i = 0, 2 do
-		local lcl = i + 1 + (i * 1)-- LoCaLe
+		lcl = i + 1 + (i * 1) -- LoCaLe
 		inDeci[i + 1] = tonumber(string.sub(code, lcl, lcl + 1), 16)
 	end
 	
-	return sortCode(inDeci, order)
+	return LIB_sortCode(inDeci, order)
 end
 
-local function toHex(_code, order, low)
+local function LIB_toHex(code, order, low)
 	local inHexa = ""
 	
 	for i = 1, 3 do
-		if     _code[i] < 0   then _code[i] = 0 
-		elseif _code[i] > 255 then _code[i] = 255
+		if     code[i] < 0   then code[i] = 0 
+		elseif code[i] > 255 then code[i] = 255
 		end
 		
-		inHexa = inHexa..string.format("%x", math.floor(_code[i]))
+		inHexa = inHexa..string.format("%x", math.floor(code[i]))
 	end
 	
-	return sortCode(inHexa, order, low)
+	return LIB_sortCode(inHexa, order, low)
 end
 
 
 
--- CHANGE TINT (RGB)
+----- CHANGE TINT (RGB) -----
 
-local function swap(_code, id)
-	local code = _code-- remove trash
-	if  string.sub(_code, 1, 4) == "000:" then code = string.sub(_code, 5)
-	elseif string.sub(_code, 1, 1) == "#" then code = string.sub(_code, 2)
+local function LIB_swap(code, id)
+	-- remove trash
+	if     string.sub(code, 1, 4) == "000:" then code = string.sub(code, 5)
+	elseif string.sub(code, 1, 1) == "#"    then code = string.sub(code, 2)
 	end
 	
 	-- function core
 	local function rgb(v, ifPalette)
-		local add = ifPalette or 0
+		-- to edit all colors; store a snippet of the "code"; LoCaLe of color code
+		local add, lcl, color = ifPalette or 0
+		
 		for i = 0, 2 do
-			local lcl = i + 1 + (i * 1)-- LoCaLe
-			local color = tonumber(string.sub(code, lcl + add, lcl + 1 + add), 16)
-			poke(0x03fc0 + v * 3 + i, color)-- apply the edition in ram
+			lcl = i + 1 + (i * 1)
+			color = tonumber(string.sub(code, lcl + add, lcl + 1 + add), 16)
+			poke(AD + v * 3 + i, color)
 		end
 	end
 	
+	-- swap all colors (palette)
 	if id == "palette" then
-		for id = 0, 15 do rgb(id, 6 * id) end-- swap palette
-		
-	elseif id == "equal" then
-		for id = 0, 15 do rgb(id) end-- edit all colors (all are equal)
-	
-	else
-		rgb(tonumber(id))-- edit one color
-	
+		for i = 0, 15 do rgb(i, 6 * i) end
+		return
 	end
 	
+	-- swap all colors (to some)
+	if id == "equal" then
+		for i = 0, 15 do rgb(i) end
+		return
+	end
+
+	-- edit one color
+	rgb(tonumber(id))
 end
 
-local function shine(speed, tbl)
-	local spd, qtt = speed and math.floor(speed) or 1, 0-- update speed; quantity of color in min/max
+local function LIB_shine(speed, tbl)
+	local qtt = 0 -- quantity of color in min/max
+
+	speed = speed and math.floor(speed) or 1 -- update speed
 	
-	for i = 0, 15 do-- index
-		for j = 0, 2 do-- rgb
+	local cur, min, max, value
+	for i = 0, 15 do -- color index
+		for j = 0, 2 do -- rgb
 		
-			local cur = peek(0x03FC0 + i * 3 + j)
+			cur = peek(AD + i * 3 + j)
 			
-			local min = type(tbl) == "table" and tbl[i][j] or 0
-			local max = type(tbl) == "table" and tbl[i][j] or 255
+			min = type(tbl) == "table" and tbl[i][j] or 0
+			max = type(tbl) == "table" and tbl[i][j] or 255
 			
-			local value = (cur + spd >= min) and cur + spd or min-- less
-			if spd > 0 then value = (cur + spd <= max) and cur + spd or max end-- more
+			if speed <= 0 then
+				value = (cur + speed >= min) and cur + speed or min -- less
+			else
+				value = (cur + speed <= max) and cur + speed or max -- more
+			end
+
+			poke(AD + i * 3 + j, value)
 			
-			poke(0x03FC0 + i * 3 + j, value)
-			
-			if value == min or value == max then qtt = qtt + 1 end
+			if value == min or value == max then   qtt = qtt + 1   end
 			
 		end
 	end
 	
-	return qtt == 48
+	-- true: all colors have arrived at the minimum or maximum of shine
+	if qtt == 48 and math.floor(speed) ~= 0 then
+		return speed < 0 and -1 or 1
+	end
+
+	return 0
 end
-
-
-
------ ADD TO TABLE -----
-
-local magicPalette = {}
-
-magicPalette.sortCode = sortCode
-magicPalette.save     = save
-magicPalette.toDec    = toDec
-magicPalette.toHex    = toHex
-magicPalette.swap     = swap
-magicPalette.shine    = shine
-
-return magicPalette

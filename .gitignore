@@ -1,4 +1,5 @@
 collection/original/head.txt
 collection/compacted/*.lua
 collection/original/*.limfile
+collection/original/makefile
 wiki
