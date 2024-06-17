@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.0.1
+-- VERSION: 4.1.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -61,42 +61,24 @@ local ShaBy = 1 -- pSHAdow called BY LIB_pList (only)
 
 ----- X, Y, WIDTH, HEIGHT -----
 
-local function LIB_lenght(text, lines, fixed, scale, smallfont)
+local function LIB_length(text, fixed, scale, smallfont, lines)
 	-- check first argument and functions to print in error message
-	local origin = {"lenght", "center", "pCenter"}
+	local origin = {"length", "center", "pCenter", "pShadow", "pBoard", "pList"}
 	libAssert(type(text) ~= "string", '"text"', {}, origin[LenBy], "1")
 	LenBy = 1
 	
-	local len = print(text, 0, 136)
-	len = (smallfont) and len - #text * 2 or len-- normal = 6x6; small = 4x6
-	
-	-- adjust the space between characters "fixed"
-	if fixed then
-		local add, cur
-		for i = 1, #text do
-			add = 0
-			cur = string.sub(text, i, i)-- current letter
-			
-			-- characters with theirs width different
-			if     string.match(cur, '[%"%+%-%_%=%<%>%?%{%}%~]') or cur == " " or cur == "'" then   add = 2
-			elseif string.match(cur, '[%!%.%,%(%)%:%;%[%]]') then   add = 3
-			elseif cur == "|" then   add = 4
-			end
-			
-			len = len + add
-		end
-	end
-
 	scale = scale or 1
-	lines = lines or 1
-	return len * scale, (6 * scale) * lines
+	lines = lines or 1 -- quantity of "\n"
+
+	-- In Tic80 API, "print" return the width of the text used like argument (#1)
+	return print(text, 0, 136, 0, fixed, scale, smallfont), (6 * scale) * lines -- width and height
 end
 
-local function LIB_center(text, x, y, lines, fixed, scale, smallfont)
+local function LIB_center(text, x, y, fixed, scale, smallfont, lines)
 	x, y = x or 0, y or 0
 	
-	if LenBy ~= 3 then LenBy = 2 end
-	local width, height = LIB_lenght(text, lines, fixed, scale, smallfont)
+	if LenBy < 2 then LenBy = 2 end
+	local width, height = LIB_length(text, fixed, scale, smallfont, lines)
 	
 	-- value approximated
 	return x - width // 2 + 1, y - height // 2 + 1
@@ -106,18 +88,23 @@ end
 
 ----- PRINT FUNCTIONS -----
 
-local function LIB_pCenter(text, x, y, color, lines, fixed, scale, smallfont)
+local function LIB_pCenter(text, x, y, color, fixed, scale, smallfont, lines)
 	LenBy = 3
-	x, y = LIB_center(text, x, y, lines, fixed, scale, smallfont)
+	x, y = LIB_center(text, x, y, fixed, scale, smallfont, lines)
 	
-	print(text, x, y, color, fixed, scale or 1, smallfont)
+	print(text, x, y, color, fixed, scale, smallfont)
 end
 
-local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale, smallfont) -- the last is a internal parameter
+local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale, smallfont, onCenter) -- the last is a internal parameter
 	libAssert(type(_shadow) ~= "table", '"shadow" is not a table.', nil, origin, "1")
 	local shadow = {}
 	for i = 1, #_shadow do -- "break" link (pointer)
 		shadow[i] = _shadow[i]
+	end
+
+	if onCenter then
+		LenBy = 4
+		textX, textY = LIB_center(text, textX, textY, fixed, scale, smallfont)
 	end
 
 	scale = scale or 1 -- default
@@ -188,11 +175,16 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	ShaBy = 1
 end
 
-local function LIB_pBoard(text, textX, textY, textColor, bColor, distance, fixed, scale, smallfont)
+local function LIB_pBoard(text, textX, textY, textColor, bColor, distance, fixed, scale, smallfont, onCenter)
 	-- position and adjust for them
 	local x, y = 0, 0
 	local less = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 	
+	if onCenter then
+		LenBy = 5
+		textX, textY = LIB_center(text, textX, textY, fixed, scale, smallfont)
+	end
+
 	-- obtain values (specified or default)
 	scale    = scale    or 1
 	bcolor   = bColor   or 15
@@ -209,7 +201,7 @@ local function LIB_pBoard(text, textX, textY, textColor, bColor, distance, fixed
 	print(text, textX, textY, textColor, fixed, scale, smallfont)
 end
 
-local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, inCenter, effect)
+local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, onCenter, effect)
 	libAssert(type(text) ~= "table", '"text"', {}, "pList", "1")
 	
 	color = color or 15
@@ -231,7 +223,10 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, inCe
 		x =  X or 0
 		y = (Y or 0) + space * (i - 1)
 		
-		if inCenter then   x, y = LIB_center(text[i], x, y - #text, #text, fixed, scale, smallfont)   end
+		if onCenter then
+			LenBy = 6
+			x, y = LIB_center(text[i], x, y - #text, fixed, scale, smallfont, #text)
+		end
 		
 		-- write text
 		if not effect then
