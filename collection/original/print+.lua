@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.0.0
+-- VERSION: 4.0.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -24,7 +24,6 @@
 
 
 ----- DEFAULT -----
-
 local function libError2(argument, options, funcName, index)
 	local msg = argument -- not customized
 	
@@ -42,7 +41,7 @@ local function libError2(argument, options, funcName, index)
 
 	end
 
-	error("\n\n[print+]"..msg.."\nFunction: "..funcName.."\nParameter: #"..index)
+	error("\n\n[print+]"..msg.."\nFunction: "..funcName.."\nParameter: #"..index.."\n")
 end
 
 local function libAssert(cond, argument, options, funcName, index)
@@ -68,7 +67,7 @@ local function LIB_lenght(text, lines, fixed, scale, smallfont)
 	libAssert(type(text) ~= "string", '"text"', {}, origin[LenBy], "1")
 	LenBy = 1
 	
-	len = print(text, 0, 136)
+	local len = print(text, 0, 136)
 	len = (smallfont) and len - #text * 2 or len-- normal = 6x6; small = 4x6
 	
 	-- adjust the space between characters "fixed"
@@ -88,7 +87,7 @@ local function LIB_lenght(text, lines, fixed, scale, smallfont)
 		end
 	end
 
-	size  = size  or 1
+	scale = scale or 1
 	lines = lines or 1
 	return len * scale, (6 * scale) * lines
 end
@@ -96,7 +95,7 @@ end
 local function LIB_center(text, x, y, lines, fixed, scale, smallfont)
 	x, y = x or 0, y or 0
 	
-	LenBy = 2
+	if LenBy ~= 3 then LenBy = 2 end
 	local width, height = LIB_lenght(text, lines, fixed, scale, smallfont)
 	
 	-- value approximated
@@ -115,6 +114,7 @@ local function LIB_pCenter(text, x, y, color, lines, fixed, scale, smallfont)
 end
 
 local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale, smallfont) -- the last is a internal parameter
+	libAssert(type(_shadow) ~= "table", '"shadow" is not a table.', nil, origin, "1")
 	local shadow = {}
 	for i = 1, #_shadow do -- "break" link (pointer)
 		shadow[i] = _shadow[i]
@@ -129,11 +129,10 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	
 	-- check table "shadow"
 	local origin = (ShaBy == 1) and "pShadow" or "pList"
-	libAssert(type("shadow") ~= "table", '"shadow" is not a table.',     nil, origin, "1")
-	libAssert(shadow[1] == nil,          '"shadow" values not defined.', nil, origin, "1")
+	libAssert(shadow[1] == nil, '"shadow" values not defined.', nil, origin, "1")
 
 	-- load all "shadow(s)"
-	for i = 1, ((#shadow < 4) and shadow or 4) do
+	for i = 1, ((#shadow < 4) and #shadow or 4) do
 
 		-- obtain: direction, color and distance
 		for j = 1, 2 do
@@ -157,13 +156,20 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 				end
 				
 			end
+
+			-- convert to number
+			for l = 1, 3 do
+				if all[l][i] ~= nil then
+					all[j][i] = tonumber(all[j][i])
+				end
+			end
 			
 		end
 		
 		-- check if the values getted are valid
 		for j = 1, 3 do
-			-- value[1][3] == direction[3]
-			libAssert(type(all[j][i] ~= "number"), "The element "..all[j + 3][i]..' is NaN. In index #'..i..' of the table "shadow".', nil, origin, "1")
+			-- all[1][3] == direction[3]
+			libAssert(type(tonumber(all[j][i])) ~= "number", "The element "..all[j + 3]..' is NaN. In index #'..i..' of the table "shadow".', nil, origin, "1")
 		end
 		
 		-- minimum (0) and maximum (3) value to "direction" and "distance"
@@ -179,9 +185,10 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	
 	-- draw original text
 	print(text, textX, textY, textColor, fixed, scale, smallfont)
+	ShaBy = 1
 end
 
-local function LIB_pBoard(text, textX, _textY, textColor, bColor, distance, fixed, scale, smallfont)
+local function LIB_pBoard(text, textX, textY, textColor, bColor, distance, fixed, scale, smallfont)
 	-- position and adjust for them
 	local x, y = 0, 0
 	local less = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
@@ -211,10 +218,10 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, inCe
 	-- check values from "effect"
 	if effect then
 		libAssert(type(effect) ~= "table", '"effect"', {}, "pList", "10")
-		libAssert(effect[1] ~= "shadow" and effect[2] ~= "board", '"effect[1]"', {"shadow", "board"}, "pList", "10")
+		libAssert(effect[1] ~= "shadow" and effect[1] ~= "board", '"effect[1]"', {"shadow", "board"}, "pList", "10")
 		
 		if     effect[1] == "shadow" then libAssert(type(effect[2]) ~= "table",  '"effect[2]" is not a table', nil, "pList", "10")
-		elseif effect[2] == "board"  then libAssert(type(effect[2]) ~= "number", '"effect[2]" is NaN',         nil, "pList", "10")
+		elseif effect[1] == "board"  then libAssert(type(effect[2]) ~= "number", '"effect[2]" is NaN',         nil, "pList", "10") -- #3 is optional (distance)
 		end
 	end
 	
@@ -248,7 +255,7 @@ end
 
 ----- USE SPRITES -----
 
-local function LIB_title(sprites, X, Y, dimensions, space, scale, chromaKey, vertical)
+local function LIB_title(sprites, X, Y, widHei, space, scale, chromaKey, vertical)
 	libAssert(type(strites) == "table", '"sprites"', {}, "title", "1")
 	
 	local chKey = nil -- table to store the chromaKey colors
@@ -271,17 +278,19 @@ local function LIB_title(sprites, X, Y, dimensions, space, scale, chromaKey, ver
 	
 	-- default values
 	X, Y = X or 0, Y or 0
-	dimensions = dimensions or 8
-	space      = space      or 1
-	scale      = scale      or 1
+	space  = space  or 1
+	scale  = scale  or 1
+	widHei = widHei or 8
+
+	widHei = widHei * scale
 	
 	local x, y
 	for i = 1, #sprites do
 		if vertical then
 			x = X
-			y = Y + (dimensions + space) * (i - 1)
+			y = Y + (widHei + space) * (i - 1)
 		else
-			x = X + (dimensions + space) * (i - 1)
+			x = X + (widHei + space) * (i - 1)
 			y = Y
 		end
 		

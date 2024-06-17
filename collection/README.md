@@ -5,7 +5,7 @@
 | Name          | Version | Short Descrition |
 | :-:           | :-:     | :-- |
 | coli2DA       | 3.0.1   | Check collision between rectangles, squares and circles. |
-| print+        | 4.0.0   | To facilite the customization and manipulation of text.  |
+| print+        | 4.0.1   | To facilite the customization and manipulation of text.  |
 | Magic_palette | -.-.-   | Permit change the color calette at run time.             |
 | longBit       | -.-.-   | Use the memory of a single *slot* for multiple things.   |
 
