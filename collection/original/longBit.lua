@@ -1,27 +1,18 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 2.4
-
------ FOLLOW_ME -----
--- Itch:     http://duckafire.itch.io
--- GitHub:   http://github.com/duckafire
--- Tic80:    http://tic80.com/dev?id=8700
--- Facebook: http://facebook.com/duckafire
-
------ LICENSE -----
-
--- Zlib License
-
--- Copyright (C) 2024 DuckAfire <facebook.com/duckafire>
-  
+-- VERSION: 3.0.0
+-- LICENSE: Zlib License
+--
+-- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
+--
 -- This software is provided 'as-is', without any express or implied
 -- warranty. In no event will the authors be held liable for any damages
 -- arising from the use of this software.
-
+--
 -- Permission is granted to anyone to use this software for any purpose,
 -- including commercial applications, and to alter it and redistribute it
 -- freely, subject to the following restrictions:
-  
+--
 -- 1. The origin of this software must not be misrepresented; you must not
 --    claim that you wrote the original software. If you use this software
 --    in a product, an acknowledgment in the product documentation would be
@@ -32,47 +23,86 @@
 
 
 
------ GLOBAL -----
+----- DEFAULT -----
+
+local function libError3(argument, options, funcName, index)
+	local msg = argument -- not customized
+	
+	if type(options) == "table" then
+		
+		if options[1] == nil then
+			msg = argument.." not specified."
+
+		elseif options[1] == 0 then
+			msg = argument.." was not defined."
+		
+		else
+			msg = "Invalid argument: "..argument.."\nTry: "
+			for i = 1, #options do
+				msg = msg..options[i].." | "
+			end
+		end
+
+	end
+
+	error("\n\n[longBit]\n"..msg.."\nFunction: "..funcName.."\nParameter: #"..index.."\n")
+end
+
+local function libAssert(cond, argument, options, funcName, index)
+	if cond then
+		libError3(argument, options, funcName, index)
+	end
+end
+
+
+
+----- STORE CHANGES -----
 
 local LBC = {} -- LongBit-Classes
 local CID = {} -- Classes-InDex
 
 
 
+----- ACTION CONTROLS -----
+
+local GetBy = 1
+
+
+
 ----- INTERNAL -----
 
-local function classToId(funcName, argID, id)-- memory index
-	assert(LBC[0]~=nil, '[longBit] pmem classes not defined. In function longBit.'..funcName..', argument #'..argID..'.')
+local function classToId(funcName, argID, id)
+	libAssert(LBC == nil, "This class", {0}, funcName, argID)
 
 	for i = 0, #CID do
 		if id == LBC[CID[i]] then return i end
 	end
 	
 	-- if no a "class" is not returned
-	error('[longBit] Undefined class: "'..id..'. In function longBit.'..funcName..', argument #'..argID..'.')
+	libError3("The class #"..id, {0}, "classToId", argID)
 end
 
 local function getArgs(funcName, argID, init, INIT, max, MAX)
-	local i = init or INIT
-	local m = max  or MAX
-	assert(i <= m, '[longBit] The "max" value is less that "init". In function longBit.'..funcName..', argument #'..argID..'.')
-	return i, m
+	init = init or INIT
+	max  = max  or MAX
+	libAssert(init > max, 'The "min" value is less that "min"', nil, funcName, argID)
+	return init, max
 end
 
 
 
 ----- SET VALUE -----
 
-local function setClass(classes, _max, _init)
-	local init, max = getArgs("setClass", 2, _init, 0, _max, #classes - 1)
-	local addToCID = nil
-	local id = 1
+local function LIB_setClass(classes, max, init)
+	init, max = getArgs("setClass", 2, init, 0, max, #classes - 1)
+
+	local id, addToCID = 1
 	
-	assert(type(classes) == "table", '[longBit] Table not specified. In function "lbit.setClass", argument #1.')
+	libAssert(type(classes) ~= "table", '"classes"', {}, "setClass", "1")
 	
 	for i = init, max do
-		assert(classes[id] ~= "", '[longBit] Empty strings cannot used like class. In function "lbit.setClass", argument #1 (index: '..i..').')
-		assert(string.find(classes[id], " ") == nil, '[longBit] Classes names cannot contain spaces characters. In function "lbit.setClass", argument #1 (index: '..i..').')
+		libAssert(classes[id] == "", "Empty strings cannot be used like class.\nIn index #"..i, nil, "setClass", "1")
+		libAssert(string.find(classes[id], " ") ~= nil, "Classes names cannot contain spaces characters.\nIn index #"..i, "setClass", "1")
 		
 		LBC[i] = classes[id]
 		id = id + 1
@@ -86,11 +116,12 @@ local function setClass(classes, _max, _init)
 	end
 end
 
-local function setMem(newValue, itemID, className, lenght)
+local function LIB_setMem(newValue, itemID, className, lenght)
 	local pmemID  = classToId("setMem", 3, className)
-	local _itemID = itemID + 1
-	local _lenght = lenght or 1
 	local value   = nil
+
+	itemID = itemID + 1
+	lenght = lenght or 1
 	
 	-- convert boolean to binary
 	if type(newValue) == "boolean" then
@@ -100,56 +131,53 @@ local function setMem(newValue, itemID, className, lenght)
 	else
 		value = tostring(newValue)
 		
-		if _lenght > 1 then
-			for i = 1, _lenght do-- update "_lenght" times
-				value = (#value < _lenght) and "0"..value or value
+		if lenght > 1 then
+			for i = 1, lenght do-- update "_lenght" times
+				value = (#value < lenght) and "0"..value or value
 			end
 		end
 	end
 	
 	-- get pmem value "fragments" to restaur it
 	local function convert(a, z)   return string.sub(tostring(pmem(pmemID)), a, z)   end
-	local back   = convert(1, _itemID - 1)
-	local front  = convert(_itemID + _lenght)
+	local back   = convert(1, itemID - 1)
+	local front  = convert(itemID + lenght)
 	
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function setAll(newValue, className, itself)
-	local value  = newValue
+local function LIB_setAll(newValue, className, itself)
 	local pmemID = classToId("setAll", 2, className)
 
 	local it = 0
 	if itself then it = pmem(pmemID) end
-	value = value + it
+	newValue = newValue + it
 
-	assert(value >= 0,        "[longBit] The value specified is too small. In function longBit.setAll, argument #1.")
-	assert(value <= 4294967295, "[longBit] The value specified is too big. In function longBit.setAll, argument #1.")
+	local text = {"small", "big"}
+	for i = 1, 2 do
+		libAssert((newValue < 0 and i == 1) or (newValue > 4294967295 and i == 2), "The value specified if too "..text[i]..".", nil, "setAll", "1")
+	end
 	
-	pmem(pmemID, value)
+	pmem(pmemID, newValue)
 end
 
-local function boot(memID, force, _init, empty)
-	local init = getArgs("boot", 3, _init, 0, 1, 0)
-	local errBegin, errEnd = "", "" -- error messages
-	local value = ""
+local function LIB_boot(memID, force, init, empty)
+	init = getArgs("boot", 3, init, 0, 1, 0)
+	local value, mem = "", ""
 	
-	assert(#memID <= 256, '[longBit] The table specified is bigger that 256. In function longBit.boot, argument #1.')
-	assert(init + #memID -1 <= 255, '[longBit] The value result addition of '..init..' (#3) with '..#memID..' (#1) is bigger of 256. In function longBit.boot, argument #3.')
-	
+	libAssert(#memID > 256, "The table specified is bigger that 256.", nil, "boot", "1")
+	libAssert(init + #memID - 1 > 255, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256.", "boot", "3")
+
 	for i = init, #memID - 1 do
 		if pmem(i) == 0 or force then
-			-- update error mensage
-			errBegin = '[longBit] The value "'..memID[i + 1]..'" is '
-			errEnd   = '. In function lbit.boot, argument #1 (index: '..i..')'
-			
 			-- check if it is valid
-			assert(type(    memID[i + 1]) == "string",  errBegin..'not a string'..errEnd)
-			assert(tonumber(memID[i + 1]) ~= nil,       errBegin..'unvalid, because it own a NaN character'..errEnd)
-			assert(tonumber(memID[i + 1]) <= 999999999, errBegin..'too big, the maximum is "999999999"'..errEnd)
+			mem = memID[i + 1]
+			libAssert(type(    mem) ~= "string", mem.." is not a string.",                       nil, "boot", "1")
+			libAssert(tonumber(mem) == nil,      mem.." have NaN characters.",                   nil, "boot", "1")
+			libAssert(tonumber(mem) > 999999999, mem.." is too big.\nThe maximum is 999999999,", nil, "boot", "1")
 			
 			-- add joker
-			value = "2"..memID[i + 1]
+			value = "2"..mem
 		
 			-- fill empty spaces
 			while #value < 10 do   value = value..(empty or "0")   end
@@ -161,22 +189,22 @@ local function boot(memID, force, _init, empty)
 	
 end
 
-local function clear(_type, _max, _init)
+local function LIB_clear(Type, max, init)
 	-- check if "_type" is valid
-	assert(_type == "all" or _type == "memory" or _type == "classes" or _type == "lessClass", '[longBit] Keyword '.._type..' is invalid, try "all", "memory", "classes" or "lessClass". In function lbit.clear, argument #1.')
-	local init, max = getArgs("clear", 2, _init, 0, _max, 255)
+	libAssert(Type ~= "all" and Type ~= "memory" and Type ~= "classes" and Type ~= "lessClass", Type, {"all", "memory", "classes", "lessClass"}, "clear", "1")
+	init, max = getArgs("clear", 2, init, 0, max, 255)
 	
-	if _type == "memory" or _type == "all" then
+	if Type == "memory" or Type == "all" then
 		for i = init, max do
 			pmem(i, 0)
 		end
 	end
 	
-	if _type == "classes" or _type == "all" then
+	if Type == "classes" or _type == "all" then
 		LBC = {}
 	end
 	
-	if _type == "lessClass" then
+	if Type == "lessClass" then
 		for i = init, max do
 			-- check if a class not are defined to this memory
 			if not LBC[i] then   pmem(i, 0)    end
@@ -189,24 +217,25 @@ end
 
 ----- GET VALUE -----
 
-local function getNum(_itemID, className, _lenght)
-	assert(_itemID > 0 and _itemID < 10, '[longBit] Index invalid, try values between 0-9. In function lbit.getNum, argument #1.')
-	
-	local itemID = _itemID + 1
-	local lenght = _lenght or 1
+local function LIB_getNum(itemID, className, lenght)
+	local origin = {"getNum", "getBool"}
+	libAssert(itemID <= 0 and itemID >= 10, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], "1")
+	GetBy = 1
+
+	itemID = itemID + 1
+	lenght = lenght or 1
 	local pmemID  = classToId("getNum", 2, className)
 	
 	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + lenght - 1))
 end
 
 local function getBool(itemID, className, equal)
-	assert(itemID > 0 and itemID < 10, '[longBit] Index invalid, try values between 0-9. In function lbit.getNum, argument #1.')
-	
+	GetBy = 2
 	return getNum(itemID, className) == (equal or 1)
 end
 
 local function getClass(id, wasDefined)
-	assert(not wasDefined or LBC[id], '[longBit] Class not defined, index: '..id..'. In function lbit.getClass, argument #1.')
+	libAssert(wasDefined and not LBC[id], "The class", {0}, "getClass", "1")
 
 	return LBC[id]
 end
@@ -219,32 +248,13 @@ end
 
 
 
------ SWAP -----	
+----- SWAP -----
 
-local function swapClass(newName, id, wasDefined)
+local function LIB_swapClass(newName, id, wasDefined)
 	-- check if the class was be defined
-	assert(not wasDefined or LBC[id], '[longBit] The class of the "'..id..'th" memory space was not defined. In function lbit.swapClass, argument #2.')
+	libAssert(wasDefined and not LBC[id], "The class", {0}, "swapClass", "2")
 	
-	assert(type(newName) == "string", '[longBit] "newValue" is not a string. In function lbit.swapClass, argument #1')
+	libAssert(type(newName) ~= "string", '"newValue" is not a string.', nil, "swapClass", "1")
 	
 	LBC[id] = newName
 end
-
-
-
------ ADD TO TABLE -----
-	
-local longBit = {}
-
-longBit.setClass  = setClass
-longBit.setMem    = setMem
-longBit.boot      = boot
-longBit.clear     = clear
-longBit.getNum    = getNum
-longBit.getBool   = getBool
-longBit.getClass  = getClass
-longBit.swapClass = swapClass
-longBit.getAll   = getAll
-longBit.setAll    = setAll
-
-return longBit
