@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.0.0
+-- VERSION: 3.1.0
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -59,8 +59,7 @@ end
 ----- STORE CHANGES -----
 
 local LBC = {} -- LongBit-Classes
-local CID = {} -- Classes-InDex
-
+local CID = {} -- Class-InDex (it stores the index of spaces used in LCB: {"a", nil, nil, "b", nil} -> {14, 17})
 
 
 ----- ACTION CONTROLS -----
@@ -74,7 +73,7 @@ local GetBy = 1
 local function classToId(funcName, argID, id)
 	libAssert(LBC == nil, "This class", {0}, funcName, argID)
 
-	for i = 0, #CID do
+	for i = 1, #CID do
 		if id == LBC[CID[i]] then return i end
 	end
 	
@@ -106,22 +105,25 @@ local function LIB_setClass(classes, max, init)
 		
 		LBC[i] = classes[id]
 		id = id + 1
-		
+
 		addToCID = true
 		for j = 1, #CID do
-			if CID[j] == i then addToCID = false end
+			if CID[j] == i then
+				addToCID = false
+				break
+			end
 		end
-		
+
 		if addToCID then table.insert(CID, i) end
 	end
 end
 
-local function LIB_setMem(newValue, itemID, className, lenght)
+local function LIB_setMem(newValue, itemID, className, length)
 	local pmemID  = classToId("setMem", 3, className)
 	local value   = nil
 
 	itemID = itemID + 1
-	lenght = lenght or 1
+	length = length or 1
 	
 	-- convert boolean to binary
 	if type(newValue) == "boolean" then
@@ -131,9 +133,9 @@ local function LIB_setMem(newValue, itemID, className, lenght)
 	else
 		value = tostring(newValue)
 		
-		if lenght > 1 then
-			for i = 1, lenght do-- update "_lenght" times
-				value = (#value < lenght) and "0"..value or value
+		if length > 1 then
+			for i = 1, length do-- update "_length" times
+				value = (#value < length) and "0"..value or value
 			end
 		end
 	end
@@ -141,27 +143,33 @@ local function LIB_setMem(newValue, itemID, className, lenght)
 	-- get pmem value "fragments" to restaur it
 	local function convert(a, z)   return string.sub(tostring(pmem(pmemID)), a, z)   end
 	local back   = convert(1, itemID - 1)
-	local front  = convert(itemID + lenght)
+	local front  = convert(itemID + length)
 	
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function LIB_setAll(newValue, className, itself)
+local function LIB_setAll(newValue, className, change, replace)
 	local pmemID = classToId("setAll", 2, className)
 
-	local it = 0
-	if itself then it = pmem(pmemID) end
-	newValue = newValue + it
+	change = change or 0
+	if change == 0 then   newValue = "2"..newValue   end
+	newValue = tonumber(newValue)
+	if change ~= 0 then   newValue = newValue + pmem(pmemID) * (change < 0 and -1 or 1)   end
 
 	local text = {"small", "big"}
 	for i = 1, 2 do
 		libAssert((newValue < 0 and i == 1) or (newValue > 4294967295 and i == 2), "The value specified if too "..text[i]..".", nil, "setAll", "1")
 	end
 	
-	pmem(pmemID, newValue)
+	if pmem(pmemID) == 0 or replace then
+		pmem(pmemID, newValue)
+		return true
+	end
+
+	return false
 end
 
-local function LIB_boot(memID, force, init, empty)
+local function LIB_boot(memID, replace, init, empty)
 	init = getArgs("boot", 3, init, 0, 1, 0)
 	local value, mem = "", ""
 	
@@ -169,7 +177,7 @@ local function LIB_boot(memID, force, init, empty)
 	libAssert(init + #memID - 1 > 255, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256.", "boot", "3")
 
 	for i = init, #memID - 1 do
-		if pmem(i) == 0 or force then
+		if pmem(i) == 0 or replace then
 			-- check if it is valid
 			mem = memID[i + 1]
 			libAssert(type(    mem) ~= "string", mem.." is not a string.",                       nil, "boot", "1")
@@ -194,67 +202,79 @@ local function LIB_clear(Type, max, init)
 	libAssert(Type ~= "all" and Type ~= "memory" and Type ~= "classes" and Type ~= "lessClass", Type, {"all", "memory", "classes", "lessClass"}, "clear", "1")
 	init, max = getArgs("clear", 2, init, 0, max, 255)
 	
+	local changed = false
 	if Type == "memory" or Type == "all" then
 		for i = init, max do
+			changed = true
 			pmem(i, 0)
 		end
 	end
 	
-	if Type == "classes" or _type == "all" then
+	if Type == "classes" or Type == "all" then
+		changed = true
 		LBC = {}
 	end
 	
 	if Type == "lessClass" then
 		for i = init, max do
 			-- check if a class not are defined to this memory
-			if not LBC[i] then   pmem(i, 0)    end
+			if not LBC[i] then
+				changed = true
+				pmem(i, 0)
+			end
 		end
 	end
-	
+
+	return changed
 end
 
 
 
 ----- GET VALUE -----
 
-local function LIB_getNum(itemID, className, lenght)
+local function LIB_getNum(itemID, className, length)
 	local origin = {"getNum", "getBool"}
-	libAssert(itemID <= 0 and itemID >= 10, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], "1")
+	libAssert(itemID < 0 or itemID > 9, "Invalid index #"..itemID..".\nTry values between 1-9.", nil, origin[GetBy], "1")
+	
+	itemID = itemID + 1
+	length = length or 1
+	
+	libAssert(length < 1 or length > 9, "Invalid sub-memory scale.\nTry values between 1-9.", nil, origin[GetBy], "3")
 	GetBy = 1
 
-	itemID = itemID + 1
-	lenght = lenght or 1
 	local pmemID  = classToId("getNum", 2, className)
 	
-	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + lenght - 1))
+	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
 end
 
-local function getBool(itemID, className, equal)
+local function LIB_getBool(itemID, className, equal, length)
 	GetBy = 2
-	return getNum(itemID, className) == (equal or 1)
+	return LIB_getNum(itemID, className, length) == (equal or 1)
 end
 
-local function getClass(id, wasDefined)
+local function LIB_getClass(id, wasDefined)
 	libAssert(wasDefined and not LBC[id], "The class", {0}, "getClass", "1")
 
 	return LBC[id]
 end
 
-local function getAll(className)
+local function LIB_getAll(className)
 	local pmemID = classToId("getAll", 1, className)
 
-	return pmem(pmemID)
+	if pmem(pmemID) == 0 then return 0            end
+	return string.sub(tostring(pmem(pmemID)), 2)
 end
 
 
 
 ----- SWAP -----
 
-local function LIB_swapClass(newName, id, wasDefined)
-	-- check if the class was be defined
-	libAssert(wasDefined and not LBC[id], "The class", {0}, "swapClass", "2")
-	
+local function LIB_swapClass(newName, id)
 	libAssert(type(newName) ~= "string", '"newValue" is not a string.', nil, "swapClass", "1")
-	
+
+	local wasDefined = LBC[id]
 	LBC[id] = newName
+
+	if wasDefined then return true end
+	return false
 end
