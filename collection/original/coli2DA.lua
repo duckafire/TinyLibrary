@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 3.0.1
+-- VERSION: 3.1.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -120,8 +120,8 @@ local function LIB_tile(...)-- one rect body; collision side; id flag
 	local x1, y1, x2, y2
 	
 	local flagID = arg[lastArg + 1] or 0
-	local extraX = arg[lastArg + 2] or 0
-	local extraY = arg[lastArg + 3] or 0
+	local adjstX = arg[lastArg + 2] or 0
+	local adjstY = arg[lastArg + 3] or 0
 	
 	if     arg[lastArg] == "top"   then x1, y1, x2, y2 =  0, -1,  w - 1, -1
 	elseif arg[lastArg] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
@@ -129,8 +129,8 @@ local function LIB_tile(...)-- one rect body; collision side; id flag
 	elseif arg[lastArg] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
 	else libError("type", {"top", "below", "left", "right"}, "tile", "(last)") end
 	
-	return fget(mget((obj.x + x1) // 8 + extraX, (obj.y + y1) // 8 + extraY), flagID) and-- 1
-		   fget(mget((obj.x + x2) // 8 + extraX, (obj.y + y2) // 8 + extraY), flagID)    -- 2
+	return fget(mget((obj.x + x1) // 8 + adjstX, (obj.y + y1) // 8 + adjstY), flagID) and-- 1
+		   fget(mget((obj.x + x2) // 8 + adjstX, (obj.y + y2) // 8 + adjstY), flagID)    -- 2
 end
 
 local function LIB_tileCross(...)-- rect object; table; bollean
@@ -146,8 +146,8 @@ local function LIB_tileCross(...)-- rect object; table; bollean
 	return arg[lastArg] and {top = values[0], below = values[1], left = values[2], right = values[3]} or values
 end
 
-local function LIB_box360(sx, sy, obj, flag)-- horizontal speed; vertical speed; collions sides (from "tile", "tileCross" or manually)
-	local sides = LIB_tileCross(obj, false, flag)
+local function LIB_box360(sx, sy, obj, flag, adjstX, adjstY)-- horizontal speed; vertical speed; collions sides (from "tile", "tileCross" or manually)
+	local sides = LIB_tileCross(obj, false, flag, adjstX, adjstY)
 	
 	local topBelow  = sy and ((sy < 0 and sides[0]) or (sy > 0 and sides[1])) or false
 	local leftRight = sx and ((sx < 0 and sides[2]) or (sx > 0 and sides[3])) or false
@@ -244,7 +244,10 @@ local function LIB_touch(initX, initY, finalX, finalY, dimensions)-- cursor dime
 	cursor.width  = dimensions.width  and math.abs(dimensions.width ) or dimensions[1] and math.abs(dimensions[1]) or 1-- only positive values
 	cursor.height = dimensions.height and math.abs(dimensions.height) or dimensions[2] and math.abs(dimensions[2]) or 1
 	
-	return LIB_rectangle(cursor, {initX, initY, finalX, finalY})
+	return cursor.x + cursor.width  - 1 >= initX  and
+		   cursor.x                     <= finalX and
+		   cursor.y + cursor.height - 1 >= initY  and
+		   cursor.y                     <= finalY
 end
 
 
