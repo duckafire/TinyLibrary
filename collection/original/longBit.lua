@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.1.0
+-- VERSION: 3.2.0
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -55,11 +55,17 @@ local function libAssert(cond, argument, options, funcName, index)
 end
 
 
+----- CONSTANTS -----
+
+local ZERO = 2000000000
+local MAX  = 2999999999
+
+
 
 ----- STORE CHANGES -----
 
 local LBC = {} -- LongBit-Classes
-local CID = {} -- Class-InDex (it stores the index of spaces used in LCB: {"a", nil, nil, "b", nil} -> {14, 17})
+local CID = {} -- Classes-InDex (it stores the index of spaces used in LCB)
 
 
 ----- ACTION CONTROLS -----
@@ -74,34 +80,29 @@ local function classToId(funcName, argID, id)
 	libAssert(LBC == nil, "This class", {0}, funcName, argID)
 
 	for i = 1, #CID do
-		if id == LBC[CID[i]] then return i end
+		if id == LBC[CID[i]] then return CID[i] end
 	end
 	
 	-- if no a "class" is not returned
-	libError3("The class #"..id, {0}, "classToId", argID)
-end
-
-local function getArgs(funcName, argID, init, INIT, max, MAX)
-	init = init or INIT
-	max  = max  or MAX
-	libAssert(init > max, 'The "min" value is less that "min"', nil, funcName, argID)
-	return init, max
+	libError3('The class "'..id..'"', {0}, funcName, argID)
 end
 
 
 
 ----- SET VALUE -----
 
-local function LIB_setClass(classes, max, init)
-	init, max = getArgs("setClass", 2, init, 0, max, #classes - 1)
+local function LIB_setClass(classes, init)
+	init = init or 0
 
-	local id, addToCID = 1
-	
 	libAssert(type(classes) ~= "table", '"classes"', {}, "setClass", "1")
+	libAssert(init < 0 or init > 255, '"init" is invalid.\nTry values between 0-255', nil, "setClass", "1")
 	
+	local max = init + #classes - 1
+	max = max < 255 and max or 255
+
+	local id, addToCID = 1, true
 	for i = init, max do
-		libAssert(classes[id] == "", "Empty strings cannot be used like class.\nIn index #"..i, nil, "setClass", "1")
-		libAssert(string.find(classes[id], " ") ~= nil, "Classes names cannot contain spaces characters.\nIn index #"..i, "setClass", "1")
+		libAssert(classes[id] == "" or string.find(classes[id], " ") ~= nil, "Invalid class.\nDo not use strings with spaces or void strings", nil, "setClass", "1")
 		
 		LBC[i] = classes[id]
 		id = id + 1
@@ -116,6 +117,8 @@ local function LIB_setClass(classes, max, init)
 
 		if addToCID then table.insert(CID, i) end
 	end
+
+	return #classes == id
 end
 
 local function LIB_setMem(newValue, itemID, className, length)
@@ -148,69 +151,136 @@ local function LIB_setMem(newValue, itemID, className, length)
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function LIB_setAll(newValue, className, change, replace)
+local function LIB_setAll(newValue, className, change, loop, right)
 	local pmemID = classToId("setAll", 2, className)
 
+	local function convert(value, number, _right)
+		if number then
+			-- "2000123"
+			-- "123"
+			repeat
+				value = string.sub(value, 2)
+			until not (string.sub(value, 1, 1) == 0)
+
+			-- 123
+			return tonumber(value)
+		end
+
+		-- 123
+		-- 000000123
+		if #newValue < 9 then
+			for i = 1, 9 - #newValue do
+				if _right then
+					newValue = newValue.."0"
+				else
+					newValue = "0"..newValue
+				end
+			end
+		end
+
+		-- 2000000123
+		return tonumber("2"..newValue)
+	end
+
 	change = change or 0
-	if change == 0 then   newValue = "2"..newValue   end
-	newValue = tonumber(newValue)
-	if change ~= 0 then   newValue = newValue + pmem(pmemID) * (change < 0 and -1 or 1)   end
+	if change == 0 then   newValue = convert(newValue)   end
+	if change ~= 0 then   newValue = convert(pmem(ID), true) + convert(newValue, true) * (change < 0 and -1 or 1)   end
+	if right       then   newValue = newValue(newValue, true, true)   end
 
-	local text = {"small", "big"}
-	for i = 1, 2 do
-		libAssert((newValue < 0 and i == 1) or (newValue > 4294967295 and i == 2), "The value specified if too "..text[i]..".", nil, "setAll", "1")
-	end
-	
-	if pmem(pmemID) == 0 or replace then
-		pmem(pmemID, newValue)
-		return true
+	-- "invalid" value or the replacement is "forced"
+	if pmem(pmemID) < ZERO or pmem(pmemID) > MAX or change ~= 0 then
+		local status = (newValue < ZERO) and 0 or (newValue > MAX) and 2 or 1
+		
+		-- check underflow and overflow
+		if loop then
+			if     newValue < ZERO then
+				pmem(pmemID, MAX - math.abs(newValue))
+			elseif newValue > MAX  then
+				pmem(pmemID, newValue - MAX)
+			else
+				pmem(pmemID, newValue)
+			end
+
+			return status
+		end
+
+		if     newValue < ZERO then pmem(pmemID, ZERO)
+		elseif newValue > MAX  then pmem(pmemID, MAX)
+		else   pmem(pmemID, newValue)
+		end
+
+		return status
 	end
 
-	return false
+	return -1 -- not added
 end
 
-local function LIB_boot(memID, replace, init, empty)
-	init = getArgs("boot", 3, init, 0, 1, 0)
-	local value, mem = "", ""
+local function LIB_boot(memID, replace, init, left, empty)
+	init = init or 0
+	empty = tonumber(empty) ~= nil and empty or "0"
+	local id, value = 1, ""
 	
 	libAssert(#memID > 256, "The table specified is bigger that 256.", nil, "boot", "1")
 	libAssert(init + #memID - 1 > 255, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256.", "boot", "3")
 
-	for i = init, #memID - 1 do
-		if pmem(i) == 0 or replace then
+	for i = init, init + #memID - 1 do
+		if pmem(i) <= ZERO or replace then
 			-- check if it is valid
-			mem = memID[i + 1]
-			libAssert(type(    mem) ~= "string", mem.." is not a string.",                       nil, "boot", "1")
-			libAssert(tonumber(mem) == nil,      mem.." have NaN characters.",                   nil, "boot", "1")
-			libAssert(tonumber(mem) > 999999999, mem.." is too big.\nThe maximum is 999999999,", nil, "boot", "1")
-			
-			-- add joker
-			value = "2"..mem
-		
+			value = memID[id]
+			id = id + 1
+
+			libAssert(type(    value) ~= "string", value.." is not a string.",                       nil, "boot", "1")
+			libAssert(tonumber(value) == nil,      value.." cannot be converted to number.",         nil, "boot", "1")
+			libAssert(tonumber(value) > 999999999, value.." is too big.\nThe maximum is 999999999,", nil, "boot", "1")
+				
 			-- fill empty spaces
-			while #value < 10 do   value = value..(empty or "0")   end
+			while #value < 9 do
+				if left then
+					value = empty..value
+				else
+					value = value..empty
+				end
+			end
+
+			-- add joker
+			value = "2"..value
 		
 			-- save in persistent memory
 			pmem(i, tonumber(value))
 		end
 	end
 	
+	return #memID == id
 end
 
-local function LIB_clear(Type, max, init)
+local function LIB_clear(Type, absolute, init, max)
 	-- check if "_type" is valid
-	libAssert(Type ~= "all" and Type ~= "memory" and Type ~= "classes" and Type ~= "lessClass", Type, {"all", "memory", "classes", "lessClass"}, "clear", "1")
-	init, max = getArgs("clear", 2, init, 0, max, 255)
-	
+	local isValid = false
+	local allTypes = {"all", "memory", "class", "noneMemory", "noneClass"}
+
+	for i = 1, #allTypes do
+		if Type == allTypes[i] then
+			isValid = true
+			break
+		end
+	end
+
+	libAssert(not isValid, Type, allTypes, "clear", "1")
+
+	init = init or 0
+	max  = max  or 255
+
 	local changed = false
+	local memZero = absolute and 0 or ZERO
+
 	if Type == "memory" or Type == "all" then
 		for i = init, max do
 			changed = true
-			pmem(i, 0)
+			pmem(i, memZero)
 		end
 	end
 	
-	if Type == "classes" or Type == "all" then
+	if Type == "class" or Type == "all" then
 		changed = true
 		LBC = {}
 	end
@@ -218,9 +288,18 @@ local function LIB_clear(Type, max, init)
 	if Type == "lessClass" then
 		for i = init, max do
 			-- check if a class not are defined to this memory
-			if not LBC[i] then
+			if LBC[i] ~= nil then
 				changed = true
-				pmem(i, 0)
+				pmem(i, memZero)
+			end
+		end
+	end
+
+	if Type == "noneMemory" then
+		for i = init, max do
+			if LBC[i] ~= nil and pmem(i) < ZERO and pmem(i) > MAX then
+				changed = true
+				LBC[i] = nil
 			end
 		end
 	end
@@ -240,10 +319,11 @@ local function LIB_getNum(itemID, className, length)
 	length = length or 1
 	
 	libAssert(length < 1 or length > 9, "Invalid sub-memory scale.\nTry values between 1-9.", nil, origin[GetBy], "3")
-	GetBy = 1
 
-	local pmemID  = classToId("getNum", 2, className)
+	local pmemID = classToId("getNum", 2, className)
 	
+	libAssert(#tostring(pmem(pmemID)) < 10, "Sub-memory not defined.", nil, origin[GetBy], "1")
+	GetBy = 1
 	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
 end
 
@@ -261,7 +341,7 @@ end
 local function LIB_getAll(className)
 	local pmemID = classToId("getAll", 1, className)
 
-	if pmem(pmemID) == 0 then return 0            end
+	if pmem(pmemID) < ZERO then return 0 end
 	return string.sub(tostring(pmem(pmemID)), 2)
 end
 

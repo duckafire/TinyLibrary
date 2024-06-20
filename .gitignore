@@ -3,3 +3,4 @@ collection/compacted/*.lua
 collection/original/*.limfile
 collection/original/makefile
 wiki
+docs
