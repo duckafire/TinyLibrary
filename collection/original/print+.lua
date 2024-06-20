@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.1.1
+-- VERSION: 4.2.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -92,14 +92,24 @@ local function LIB_pCenter(text, x, y, color, fixed, scale, smallfont, lines)
 	LenBy = 3
 	x, y = LIB_center(text, x, y, fixed, scale, smallfont, lines)
 	
-	print(text, x, y, color, fixed, scale, smallfont)
+	print(text, x, y, color, fixed, scale or 1, smallfont)
 end
 
 local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale, smallfont, onCenter) -- the last is a internal parameter
-	libAssert(type(_shadow) ~= "table", '"shadow" is not a table.', nil, origin, "1")
+	local origin = (ShaBy == 1) and "pShadow" or "pList"
 	local shadow = {}
-	for i = 1, #_shadow do -- "break" link (pointer)
-		shadow[i] = _shadow[i]
+	
+	if type(_shadow) == "number" then
+		shadow[1] = _shadow < 0 and 0 or _shadow > 15 and 15 or math.abs(_shadow)
+		shadow[1] = shadow[1].."-1"
+
+	elseif type(_shadow) == "table" then
+		for i = 1, #_shadow do -- "break" link (pointer)
+			shadow[i] = _shadow[i]
+		end
+	
+	else
+		libError2('\n"shadow" is not a number or table', nil, origin, "5")
 	end
 
 	if onCenter then
@@ -110,13 +120,11 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	scale = scale or 1 -- default
 	
 	local hyphen, x, y = "", 0, 0 -- '-'
-	local direction, distance, color = {}, {}, {}
-	local all = {direction, distance, color, "direction", "distance", "color"}
+	local color, direction, distance = {}, {}, {}
+	local all = {color, direction, distance, "color", "direction", "distance"}
 	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}} -- adjusts to posititon
 	
-	-- check table "shadow"
-	local origin = (ShaBy == 1) and "pShadow" or "pList"
-	libAssert(shadow[1] == nil, '"shadow" values not defined.', nil, origin, "1")
+	libAssert(shadow[1] == nil, '\n"shadow" values not defined.', nil, origin, "1")
 
 	-- load all "shadow(s)"
 	for i = 1, ((#shadow < 4) and #shadow or 4) do
@@ -125,18 +133,18 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 		for j = 1, 2 do
 			-- get values division ('-')
 			hyphen = string.find(shadow[i], "-")
-			if #shadow[i] > 0 and #shadow[i] <= 2 then hyphen = 0 end
-			libAssert(hyphen == nil, "Hyphen not specified. In index #"..i..' of the table "shadow".', nil, origin, "1")
+			if #shadow[i] == 1 or tonumber(shadow[i]) ~= nil then hyphen = 0 end -- color-direction
+			libAssert(hyphen == nil, "\nHyphen not specified. In index #"..i..' of the table "shadow".', nil, origin, "1")
 			
 			-- splits the values present in strings
 			if j == 1 then
-				direction[i] = string.sub(shadow[i], 1, hyphen - 1)
-				shadow[i]    = string.sub(shadow[i], hyphen + 1, #shadow[i])
+				color[i]  = string.sub(shadow[i], 1, hyphen - 1)
+				shadow[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
 			
 			else
-				color[i] = string.sub(shadow[i], 1, hyphen - 1)
-				
-				if hyphen == 0 then 
+				direction[i] = string.sub(shadow[i], 1, hyphen - 1)
+
+				if hyphen == 0 then
 					distance[i] = scale -- default
 				else
 					distance[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
@@ -147,7 +155,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 			-- convert to number
 			for l = 1, 3 do
 				if all[l][i] ~= nil then
-					all[j][i] = tonumber(all[j][i])
+					all[l][i] = tonumber(all[l][i])
 				end
 			end
 			
@@ -160,7 +168,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 		end
 		
 		-- minimum (0) and maximum (3) value to "direction" and "distance"
-		for l = 1, 2 do
+		for l = 2, 3 do
 			all[l][i] = (all[l][i] < 0) and 0 or (all[l][i] > 3) and 3 or all[l][i]
 		end
 		
