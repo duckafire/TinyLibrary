@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.3.0
+-- VERSION: 3.3.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -149,68 +149,31 @@ local function LIB_setMem(newValue, itemID, className, length)
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function LIB_setAll(newValue, className, change, loop, right)
+local function LIB_setAll(newValue, className, update)
 	local pmemID = classToId("setAll", 2, className)
 
-	local function convert(value, number, _right)
-		if number then
-			-- "2000123"
-			-- "123"
-			repeat
-				value = string.sub(value, 2)
-			until not (string.sub(value, 1, 1) == 0)
-
-			-- 123
-			return tonumber(value)
-		end
-
-		-- 123
-		-- 000000123
+	-- value to update or replace
+	if update then
+		newValue = pmem(pmemID) + newValue
+	else
+		newValue = tostring(math.abs(newValue))
 		if #newValue < 9 then
 			for i = 1, 9 - #newValue do
-				if _right then
-					newValue = newValue.."0"
-				else
-					newValue = "0"..newValue
-				end
+				newValue = "0"..newValue
 			end
 		end
-
-		-- 2000000123
-		return tonumber("2"..newValue)
+		newValue = tonumber("2"..newValue)
 	end
 
-	change = change or 0
-	if change == 0 then   newValue = convert(newValue)   end
-	if change ~= 0 then   newValue = convert(pmem(ID), true) + convert(newValue, true) * (change < 0 and -1 or 1)   end
-	if right       then   newValue = newValue(newValue, true, true)   end
-
-	-- "invalid" value or the replacement is "forced"
-	if pmem(pmemID) < ZERO or pmem(pmemID) > MAX or change ~= 0 then
-		local status = (newValue < ZERO) and 0 or (newValue > MAX) and 2 or 1
-		
-		-- check underflow and overflow
-		if loop then
-			if     newValue < ZERO then
-				pmem(pmemID, MAX - math.abs(newValue))
-			elseif newValue > MAX  then
-				pmem(pmemID, newValue - MAX)
-			else
-				pmem(pmemID, newValue)
-			end
-
-			return status
-		end
-
-		if     newValue < ZERO then pmem(pmemID, ZERO)
-		elseif newValue > MAX  then pmem(pmemID, MAX)
-		else   pmem(pmemID, newValue)
-		end
-
-		return status
+	local status = (newValue < ZERO) and -1 or (newValue > MAX) and 1 or 0
+	
+	-- leak not allowed
+	if     status < 0 then pmem(pmemID, ZERO    ) -- underflow
+	elseif status > 0 then pmem(pmemID, MAX     ) -- overflow
+	else                   pmem(pmemID, newValue) -- sucess
 	end
 
-	return -1 -- not added
+	return status
 end
 
 local function LIB_boot(memID, replace, init, left, empty)
