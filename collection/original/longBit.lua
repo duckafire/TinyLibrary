@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.2.0
+-- VERSION: 3.3.0
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -77,8 +77,6 @@ local GetBy = 1
 ----- INTERNAL -----
 
 local function classToId(funcName, argID, id)
-	libAssert(LBC == nil, "This class", {0}, funcName, argID)
-
 	for i = 1, #CID do
 		if id == LBC[CID[i]] then return CID[i] end
 	end
@@ -338,11 +336,15 @@ local function LIB_getClass(id, wasDefined)
 	return LBC[id]
 end
 
-local function LIB_getAll(className)
+local function LIB_getAll(className, full)
 	local pmemID = classToId("getAll", 1, className)
 
 	if pmem(pmemID) < ZERO then return 0 end
-	return string.sub(tostring(pmem(pmemID)), 2)
+	
+	local value = string.sub(tostring(pmem(pmemID)), 2)
+
+	if full then return value end
+	return tonumber(value)
 end
 
 
