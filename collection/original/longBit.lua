@@ -179,16 +179,17 @@ end
 local function LIB_boot(memID, replace, init, left, empty)
 	init = init or 0
 	empty = tonumber(empty) ~= nil and empty or "0"
-	local id, value = 1, ""
+	local id, value = 0, ""
 	
 	libAssert(#memID > 256, "The table specified is bigger that 256.", nil, "boot", "1")
 	libAssert(init + #memID - 1 > 255, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256.", "boot", "3")
 
 	for i = init, init + #memID - 1 do
+		id = id + 1
+
 		if pmem(i) <= ZERO or replace then
 			-- check if it is valid
 			value = memID[id]
-			id = id + 1
 
 			libAssert(type(    value) ~= "string", value.." is not a string.",                       nil, "boot", "1")
 			libAssert(tonumber(value) == nil,      value.." cannot be converted to number.",         nil, "boot", "1")
