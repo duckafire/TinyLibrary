@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.3.1
+-- VERSION: 3.3.2
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -25,34 +25,39 @@
 
 ----- DEFAULT -----
 
-local function libError3(argument, options, funcName, index)
-	local msg = argument -- not customized
+local function libError(condAssert, par, msg, opt, func, id)
+	-- "assert" be like
+	if condAssert ~= nil then
+		if not condAssert then return end
+	end
 	
-	if type(options) == "table" then
-		
-		if options[1] == nil then
-			msg = argument.." not specified."
+	local default = {"Error", "Function", "Index"}
+	local text = {nil, func, "#"..id}
+	local full = "\n\n[longBit]"
 
-		elseif options[1] == 0 then
-			msg = argument.." was not defined."
-		
-		else
-			msg = "Invalid argument: "..argument.."\nTry: "
-			for i = 1, #options do
-				msg = msg..options[i].." | "
-			end
+	par = par or ""
+	local function cat(str) text[1] = '"'..par..'" '..str end
+
+	if     msg == "1" then cat("was not specified")
+	elseif msg == "2" then cat("was not defined")
+	elseif msg == "3" then cat("is invalid")
+	else                   cat(msg)
+	end
+
+	for i = 1, 3 do
+		full = full.."\n"..default[i]..": "..text[i].."."
+
+		if i == 1 and opt ~= nil then
+			full = full.."\nTry: "
+			for j = 1, #opt - 1 do full = full.." | " end
+			fulll = full..opt[#opt] -- without '|'
 		end
-
 	end
 
-	error("\n\n[longBit]\n"..msg.."\nFunction: "..funcName.."\nParameter: #"..index.."\n")
+	trace("\n>\n>\n>")
+	error(full.."\n")
 end
 
-local function libAssert(cond, argument, options, funcName, index)
-	if cond then
-		libError3(argument, options, funcName, index)
-	end
-end
 
 
 ----- CONSTANTS -----
@@ -82,7 +87,7 @@ local function classToId(funcName, argID, id)
 	end
 	
 	-- if no a "class" is not returned
-	libError3('The class "'..id..'"', {0}, funcName, argID)
+	libError(nil, nil, 'The class "'..id..'"', "2", funcName, argID)
 end
 
 
@@ -92,15 +97,15 @@ end
 local function LIB_setClass(classes, init)
 	init = init or 0
 
-	libAssert(type(classes) ~= "table", '"classes"', {}, "setClass", "1")
-	libAssert(init < 0 or init > 255, '"init" is invalid.\nTry values between 0-255', nil, "setClass", "1")
+	libError(type(classes) ~= "table", "classes", "1", nil, "setClass", "1")
+	libError(init < 0 or init > 255, nil, '"init" is invalid.\nTry values between 0-255', nil, "setClass", "1")
 	
 	local max = init + #classes - 1
 	max = max < 255 and max or 255
 
 	local id, addToCID = 1, true
 	for i = init, max do
-		libAssert(classes[id] == "" or string.find(classes[id], " ") ~= nil, "Invalid class.\nDo not use strings with spaces or void strings", nil, "setClass", "1")
+		libError(classes[id] == "" or string.find(classes[id], " ") ~= nil, nil, "Invalid class. Do not use strings with spaces or void strings", nil, "setClass", "1")
 		
 		LBC[i] = classes[id]
 		id = id + 1
@@ -181,8 +186,8 @@ local function LIB_boot(memID, replace, init, left, empty)
 	empty = tonumber(empty) ~= nil and empty or "0"
 	local id, value = 0, ""
 	
-	libAssert(#memID > 256, "The table specified is bigger that 256.", nil, "boot", "1")
-	libAssert(init + #memID - 1 > 255, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256.", "boot", "3")
+	libError(#memID > 256, nil, "The table specified is bigger that 256", nil, "boot", "1")
+	libError(init + #memID - 1 > 255, nil, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256", nil, "boot", "3")
 
 	for i = init, init + #memID - 1 do
 		id = id + 1
@@ -191,9 +196,9 @@ local function LIB_boot(memID, replace, init, left, empty)
 			-- check if it is valid
 			value = memID[id]
 
-			libAssert(type(    value) ~= "string", value.." is not a string.",                       nil, "boot", "1")
-			libAssert(tonumber(value) == nil,      value.." cannot be converted to number.",         nil, "boot", "1")
-			libAssert(tonumber(value) > 999999999, value.." is too big.\nThe maximum is 999999999,", nil, "boot", "1")
+			libError(type(    value) ~= "string", nil, value.." is not a string",                       nil, "boot", "1")
+			libError(tonumber(value) == nil,      nil, value.." cannot be converted to number",         nil, "boot", "1")
+			libError(tonumber(value) > 999999999, nil, value.." is too big.\nThe maximum is 999999999", nil, "boot", "1")
 				
 			-- fill empty spaces
 			while #value < 9 do
@@ -227,7 +232,7 @@ local function LIB_clear(Type, absolute, init, max)
 		end
 	end
 
-	libAssert(not isValid, Type, allTypes, "clear", "1")
+	libError(not isValid, Type, allTypes, nil, "clear", "1")
 
 	init = init or 0
 	max  = max  or 255
@@ -275,16 +280,16 @@ end
 
 local function LIB_getNum(itemID, className, length)
 	local origin = {"getNum", "getBool"}
-	libAssert(itemID < 0 or itemID > 9, "Invalid index #"..itemID..".\nTry values between 1-9.", nil, origin[GetBy], "1")
+	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], "1")
 	
 	itemID = itemID + 1
 	length = length or 1
 	
-	libAssert(length < 1 or length > 9, "Invalid sub-memory scale.\nTry values between 1-9.", nil, origin[GetBy], "3")
+	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], "3")
 
 	local pmemID = classToId("getNum", 2, className)
 	
-	libAssert(#tostring(pmem(pmemID)) < 10, "Sub-memory not defined.", nil, origin[GetBy], "1")
+	libError(#tostring(pmem(pmemID)) < 10, nil, "Sub-memory not defined", nil, origin[GetBy], "1")
 	GetBy = 1
 	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
 end
@@ -295,7 +300,7 @@ local function LIB_getBool(itemID, className, equal, length)
 end
 
 local function LIB_getClass(id, wasDefined)
-	libAssert(wasDefined and not LBC[id], "The class", {0}, "getClass", "1")
+	libError(wasDefined and not LBC[id], nil, "The class", "2", "getClass", "1")
 
 	return LBC[id]
 end
@@ -316,7 +321,7 @@ end
 ----- SWAP -----
 
 local function LIB_swapClass(newName, id)
-	libAssert(type(newName) ~= "string", '"newValue" is not a string.', nil, "swapClass", "1")
+	libError(type(newName) ~= "string", "newValue", "is not a string", nil, "swapClass", "1")
 
 	local wasDefined = LBC[id]
 	LBC[id] = newName

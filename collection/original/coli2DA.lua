@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 3.1.1
+-- VERSION: 3.1.2
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -25,17 +25,37 @@
 
 ----- DEFAULT -----
 
-local function libError(argument, options, funcName, index)
-	local msg = argument -- not customized
+local function libError(condAssert, par, msg, opt, func, id)
+	-- "assert" be like
+	if condAssert ~= nil then
+		if not condAssert then return end
+	end
 	
-	if options ~= nil then
-		msg = "\nInvalid argument: "..argument.."\nTry: "
-		for i = 1, #options do
-			msg = msg..options[i].." | "
+	local default = {"Error", "Function", "Index"}
+	local text = {nil, func, "#"..id}
+	local full = "\n\n[coli2DA]"
+
+	par = par or ""
+	local function cat(str) text[1] = '"'..par..'" '..str end
+
+	if     msg == "1" then cat("was not specified")
+	elseif msg == "2" then cat("was not defined")
+	elseif msg == "3" then cat("is invalid")
+	else                   cat(msg)
+	end
+
+	for i = 1, 3 do
+		full = full.."\n"..default[i]..": "..text[i].."."
+
+		if i == 1 and opt ~= nil then
+			full = full.."\nTry: "
+			for j = 1, #opt - 1 do full = full.." | " end
+			fulll = full..opt[#opt] -- without '|'
 		end
 	end
 
-	error("\n\n[coli2DA]"..msg.."\nFunction: "..funcName.."\nParameter: #"..index.."\n")
+	trace("\n>\n>\n>")
+	error(full.."\n")
 end
 
 ----- CONSTANTS -----
@@ -51,7 +71,7 @@ local function LIB_newBody(Type, x, y, width_radius, height)
 	if Type == CI then return {x = x, y = y, radius = width_radius or 4} end
 	if Type == SI then return {x = x, y = y} end
 
-	libError("type", {RE, CI, SI}, "newBody", 1)
+	libError(nil, "type", "3", {RE, CI, SI}, "newBody", 1)
 end
 
 local function ckbd(arg, types)--Check bodies: (table) all argameters; (table) type of bodies(1-2)
@@ -94,7 +114,7 @@ local function LIB_mapAlign(...)-- one rect object; boolean
 	local bodyType, obj, lastArg, x, y = (type(arg[1]) == "table" or (type(arg[1]) ~= "table" and #arg >= 4)) and RE or SI
 	
 	-- format: func(x, y, onCenter)
-	if type(arg[1]) ~= "table" and #arg < 2 then libError("Insuficient arguments for this call format", nil, "mapAlign", "(quantity)") end
+	if type(arg[1]) ~= "table" and #arg < 2 then libError(nil, nil, "Insuficient arguments for this call format", nil, "mapAlign", "(quantity)") end
 	
 	obj, _, arg, lastArg = ckbd(arg, {bodyType})
 	x, y = obj.x, obj.y
@@ -127,7 +147,7 @@ local function LIB_tile(...)-- one rect body; collision side; id flag
 	elseif arg[lastArg] == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
 	elseif arg[lastArg] == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
 	elseif arg[lastArg] == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
-	else libError("type", {"top", "below", "left", "right"}, "tile", "(last)") end
+	else libError(nil, "type", "3", {"top", "below", "left", "right"}, "tile", "(last)") end
 	
 	return fget(mget((obj.x + x1) // 8 + adjstX, (obj.y + y1) // 8 + adjstY), flagID) and-- 1
 		   fget(mget((obj.x + x2) // 8 + adjstX, (obj.y + y2) // 8 + adjstY), flagID)    -- 2
@@ -258,7 +278,7 @@ local function LIB_impactPixel(...)-- two any bodies; collision type
 	local temp = {...}
 	local tID = type(temp[#temp]) == "boolean" and #temp - 1 or #temp
 
-	if temp[tID] ~= RE and temp[tID] ~= CI then libError("type", {RE, CI}, "impactPixel", "(first)") end
+	if temp[tID] ~= RE and temp[tID] ~= CI then libError(nil, "type", "3", {RE, CI}, "impactPixel", "(first)") end
 
 	local mixA, mixB, arg, _ = ckbd(temp, {temp[tID], temp[tID]})
 
