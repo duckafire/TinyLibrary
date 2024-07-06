@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.3.2
+-- VERSION: 3.4.2
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -92,6 +92,48 @@ end
 
 
 
+----- GET VALUE -----
+
+local function LIB_getNum(itemID, className, length)
+	local origin = {"getNum", "getBool"}
+	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], "1")
+	
+	itemID = itemID + 1
+	length = length or 1
+	
+	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], "3")
+
+	local pmemID = classToId("getNum", 2, className)
+	
+	libError(#tostring(pmem(pmemID)) < 10, nil, "Sub-memory not defined", nil, origin[GetBy], "1")
+	GetBy = 1
+	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
+end
+
+local function LIB_getBool(itemID, className, equal, length)
+	GetBy = 2
+	return LIB_getNum(itemID, className, length) == (equal or 1)
+end
+
+local function LIB_getClass(id, wasDefined)
+	libError(wasDefined and not LBC[id], nil, "The class", "2", "getClass", "1")
+
+	return LBC[id]
+end
+
+local function LIB_getAll(className, full)
+	local pmemID = classToId("getAll", 1, className)
+
+	if pmem(pmemID) < ZERO then return 0 end
+	
+	local value = string.sub(tostring(pmem(pmemID)), 2)
+
+	if full then return value end
+	return tonumber(value)
+end
+
+
+
 ----- SET VALUE -----
 
 local function LIB_setClass(classes, init)
@@ -124,7 +166,7 @@ local function LIB_setClass(classes, init)
 	return #classes == id
 end
 
-local function LIB_setMem(newValue, itemID, className, length)
+local function LIB_setNum(newValue, itemID, className, length)
 	local pmemID  = classToId("setMem", 3, className)
 	local value   = nil
 
@@ -220,6 +262,20 @@ local function LIB_boot(memID, replace, init, left, empty)
 	return #memID == id
 end
 
+local function LIB_update(class, values, indexes)
+	libError(#values ~= #indexes, nil, "The quantity of values and indexes must be equal", nil, "update", "1-2")
+
+	local changed = false
+	for i = 1, 9 do
+		if i == indexes[i] then
+			lbit.setNum(values[i], class, #tostring(values[i]))
+			changed = true
+		end
+	end
+
+	return changed
+end
+
 local function LIB_clear(Type, absolute, init, max)
 	-- check if "_type" is valid
 	local isValid = false
@@ -272,48 +328,6 @@ local function LIB_clear(Type, absolute, init, max)
 	end
 
 	return changed
-end
-
-
-
------ GET VALUE -----
-
-local function LIB_getNum(itemID, className, length)
-	local origin = {"getNum", "getBool"}
-	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], "1")
-	
-	itemID = itemID + 1
-	length = length or 1
-	
-	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], "3")
-
-	local pmemID = classToId("getNum", 2, className)
-	
-	libError(#tostring(pmem(pmemID)) < 10, nil, "Sub-memory not defined", nil, origin[GetBy], "1")
-	GetBy = 1
-	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
-end
-
-local function LIB_getBool(itemID, className, equal, length)
-	GetBy = 2
-	return LIB_getNum(itemID, className, length) == (equal or 1)
-end
-
-local function LIB_getClass(id, wasDefined)
-	libError(wasDefined and not LBC[id], nil, "The class", "2", "getClass", "1")
-
-	return LBC[id]
-end
-
-local function LIB_getAll(className, full)
-	local pmemID = classToId("getAll", 1, className)
-
-	if pmem(pmemID) < ZERO then return 0 end
-	
-	local value = string.sub(tostring(pmem(pmemID)), 2)
-
-	if full then return value end
-	return tonumber(value)
 end
 
 
