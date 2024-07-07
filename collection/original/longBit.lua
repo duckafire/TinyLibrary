@@ -35,8 +35,8 @@ local function libError(condAssert, par, msg, opt, func, id)
 	local text = {nil, func, "#"..id}
 	local full = "\n\n[longBit]"
 
-	par = par or ""
-	local function cat(str) text[1] = '"'..par..'" '..str end
+	par = par and '"'..par..'"' or ""
+	local function cat(str) text[1] = par..str end
 
 	if     msg == "1" then cat("was not specified")
 	elseif msg == "2" then cat("was not defined")
@@ -87,7 +87,7 @@ local function classToId(funcName, argID, id)
 	end
 	
 	-- if no a "class" is not returned
-	libError(nil, nil, 'The class "'..id..'"', "2", funcName, argID)
+	libError(nil, nil, "Invalid class: "..id, nil, funcName, argID)
 end
 
 
@@ -96,16 +96,16 @@ end
 
 local function LIB_getNum(itemID, className, length)
 	local origin = {"getNum", "getBool"}
-	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], "1")
+	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], 1)
 	
 	itemID = itemID + 1
 	length = length or 1
 	
-	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], "3")
+	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], 3)
 
 	local pmemID = classToId("getNum", 2, className)
 	
-	libError(#tostring(pmem(pmemID)) < 10, nil, "Sub-memory not defined", nil, origin[GetBy], "1")
+	libError(#tostring(pmem(pmemID)) < 10, nil, "Sub-memory not defined", nil, origin[GetBy], 1)
 	GetBy = 1
 	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
 end
@@ -116,7 +116,7 @@ local function LIB_getBool(itemID, className, equal, length)
 end
 
 local function LIB_getClass(id, wasDefined)
-	libError(wasDefined and not LBC[id], nil, "The class", "2", "getClass", "1")
+	libError(wasDefined and not LBC[id], "class", "3", nil, "getClass", 1)
 
 	return LBC[id]
 end
@@ -139,15 +139,15 @@ end
 local function LIB_setClass(classes, init)
 	init = init or 0
 
-	libError(type(classes) ~= "table", "classes", "1", nil, "setClass", "1")
-	libError(init < 0 or init > 255, nil, '"init" is invalid.\nTry values between 0-255', nil, "setClass", "1")
+	libError(type(classes) ~= "table", "classes", "1", nil, "setClass", 1)
+	libError(init < 0 or init > 255, nil, '"init" is invalid.\nTry values between 0-255', nil, "setClass", 1)
 	
 	local max = init + #classes - 1
 	max = max < 255 and max or 255
 
 	local id, addToCID = 1, true
 	for i = init, max do
-		libError(classes[id] == "" or string.find(classes[id], " ") ~= nil, nil, "Invalid class. Do not use strings with spaces or void strings", nil, "setClass", "1")
+		libError(classes[id] == "" or string.find(classes[id], " ") ~= nil, nil, "Invalid class. Do not use strings with spaces or void strings", nil, "setClass", 1)
 		
 		LBC[i] = classes[id]
 		id = id + 1
@@ -228,8 +228,8 @@ local function LIB_boot(memID, replace, init, left, empty)
 	empty = tonumber(empty) ~= nil and empty or "0"
 	local id, value = 0, ""
 	
-	libError(#memID > 256, nil, "The table specified is bigger that 256", nil, "boot", "1")
-	libError(init + #memID - 1 > 255, nil, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256", nil, "boot", "3")
+	libError(#memID > 256, nil, "The table specified is bigger that 256", nil, "boot", 1)
+	libError(init + #memID - 1 > 255, nil, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256", nil, "boot", 3)
 
 	for i = init, init + #memID - 1 do
 		id = id + 1
@@ -238,9 +238,9 @@ local function LIB_boot(memID, replace, init, left, empty)
 			-- check if it is valid
 			value = memID[id]
 
-			libError(type(    value) ~= "string", nil, value.." is not a string",                       nil, "boot", "1")
-			libError(tonumber(value) == nil,      nil, value.." cannot be converted to number",         nil, "boot", "1")
-			libError(tonumber(value) > 999999999, nil, value.." is too big.\nThe maximum is 999999999", nil, "boot", "1")
+			libError(type(    value) ~= "string", nil, value.." is not a string",                       nil, "boot", 1)
+			libError(tonumber(value) == nil,      nil, value.." cannot be converted to number",         nil, "boot", 1)
+			libError(tonumber(value) > 999999999, nil, value.." is too big.\nThe maximum is 999999999", nil, "boot", 1)
 				
 			-- fill empty spaces
 			while #value < 9 do
@@ -268,7 +268,7 @@ local function LIB_update(class, values, indexes)
 	local changed = false
 	for i = 1, 9 do
 		if i == indexes[i] then
-			lbit.setNum(values[i], class, #tostring(values[i]))
+			LIB_setNum(values[i], indexes[i], class, #tostring(values[i]))
 			changed = true
 		end
 	end
@@ -288,7 +288,7 @@ local function LIB_clear(Type, absolute, init, max)
 		end
 	end
 
-	libError(not isValid, Type, allTypes, nil, "clear", "1")
+	libError(not isValid, Type, allTypes, nil, "clear", 1)
 
 	init = init or 0
 	max  = max  or 255
@@ -335,7 +335,7 @@ end
 ----- SWAP -----
 
 local function LIB_swapClass(newName, id)
-	libError(type(newName) ~= "string", "newValue", "is not a string", nil, "swapClass", "1")
+	libError(type(newName) ~= "string", "newValue", "is not a string", nil, "swapClass", 1)
 
 	local wasDefined = LBC[id]
 	LBC[id] = newName

@@ -35,8 +35,8 @@ local function libError(condAssert, par, msg, opt, func, id)
 	local text = {nil, func, "#"..id}
 	local full = "\n\n[print+]"
 
-	par = par or ""
-	local function cat(str) text[1] = '"'..par..'" '..str end
+	par = par and '"'..par..'"' or ""
+	local function cat(str) text[1] = par..str end
 
 	if     msg == "1" then cat("was not specified")
 	elseif msg == "2" then cat("was not defined")
@@ -72,7 +72,7 @@ local ShaBy = 1 -- pSHAdow called BY LIB_pList (only)
 local function LIB_length(text, fixed, scale, smallfont, lines)
 	-- check first argument and functions to print in error message
 	local origin = {"length", "center", "pCenter", "pShadow", "pBoard", "pList"}
-	libError(type(text) ~= "string", "text", "1", nil, origin[LenBy], "1")
+	libError(type(text) ~= "string", "text", "1", nil, origin[LenBy], 1)
 	LenBy = 1
 	
 	scale = scale or 1
@@ -117,7 +117,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 		end
 	
 	else
-		libError(nil, "shadow", "is not a number or table", nil, origin, "5")
+		libError(nil, "shadow", "is not a number or table", nil, origin, 5)
 	end
 
 	if onCenter then
@@ -132,7 +132,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	local all = {color, direction, distance, "color", "direction", "distance"}
 	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}} -- adjusts to posititon
 	
-	libError(shadow[1] == nil, "shadow", "values not defined", nil, origin, "1")
+	libError(shadow[1] == nil, "shadow", "values not defined", nil, origin, 1)
 
 	-- load all "shadow(s)"
 	for i = 1, ((#shadow < 4) and #shadow or 4) do
@@ -142,7 +142,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 			-- get values division ('-')
 			hyphen = string.find(shadow[i], "-")
 			if #shadow[i] == 1 or tonumber(shadow[i]) ~= nil then hyphen = 0 end -- color-direction
-			libError(hyphen == nil, nil, "Hyphen not specified. In index #"..i..' of the table "shadow"', nil, origin, "1")
+			libError(hyphen == nil, nil, "Hyphen not specified. In index #"..i..' of the table "shadow"', nil, origin, 1)
 			
 			-- splits the values present in strings
 			if j == 1 then
@@ -172,7 +172,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 		-- check if the values getted are valid
 		for j = 1, 3 do
 			-- all[1][3] == direction[3]
-			libError(type(tonumber(all[j][i])) ~= "number", nil, "The element "..all[j + 3]..' is NaN. In index #'..i..' of the table "shadow".', nil, origin, "1")
+			libError(type(tonumber(all[j][i])) ~= "number", nil, "The element "..all[j + 3]..' is NaN. In index #'..i..' of the table "shadow".', nil, origin, 1)
 		end
 		
 		-- minimum (0) and maximum (3) value to "direction" and "distance"
@@ -218,18 +218,18 @@ local function LIB_pBoard(text, textX, textY, textColor, bColor, distance, fixed
 end
 
 local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, onCenter, effect)
-	libError(type(text) ~= "table", "text", nil, "1", "pList", "1")
+	libError(type(text) ~= "table", "text", "1", nil, "pList", 1)
 	
 	color = color or 15
 	space = space or 10 -- vertical
 	
 	-- check values from "effect"
 	if effect then
-		libError(type(effect) ~= "table", "effect", "1", nil, "pList", "10")
-		libError(effect[1] ~= "shadow" and effect[1] ~= "board", "effect[1]", "3", {"shadow", "board"}, "pList", "10")
+		libError(type(effect) ~= "table", "effect", "1", nil, "pList", 10)
+		libError(effect[1] ~= "shadow" and effect[1] ~= "board", "effect[1]", "3", {"shadow", "board"}, "pList", 10)
 		
-		if     effect[1] == "shadow" then libError(type(effect[2]) ~= "table",  "effect[2]", "is not a table", nil, "pList", "10")
-		elseif effect[1] == "board"  then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN",         nil, "pList", "10") -- #3 is optional (distance)
+		if     effect[1] == "shadow" then libError(type(effect[2]) ~= "table",  "effect[2]", "is not a table", nil, "pList", 10)
+		elseif effect[1] == "board"  then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN",         nil, "pList", 10) -- #3 is optional (distance)
 		end
 	end
 	
@@ -267,7 +267,7 @@ end
 ----- USE SPRITES -----
 
 local function LIB_title(sprites, X, Y, widHei, space, scale, chromaKey, vertical)
-	libError(type(strites) == "table", '"sprites"', "1", nil, "title", "1")
+	libError(type(strites) == "table", '"sprites"', "1", nil, "title", 1)
 	
 	local chKey = nil -- table to store the chromaKey colors
 	
