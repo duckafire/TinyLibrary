@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.2.2
+-- VERSION: 4.2.3
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -71,7 +71,7 @@ local ShaBy = 1 -- pSHAdow called BY LIB_pList (only)
 
 local function LIB_length(text, fixed, scale, smallfont, lines)
 	-- check first argument and functions to print in error message
-	local origin = {"length", "center", "pCenter", "pShadow", "pBoard", "pList"}
+	local origin = {"length", "center", "pCenter", "pShadow", "pBorder", "pList"}
 	libError(type(text) ~= "string", "text", "1", nil, origin[LenBy], 1)
 	LenBy = 1
 	
@@ -130,7 +130,7 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	local hyphen, x, y = "", 0, 0 -- '-'
 	local color, direction, distance = {}, {}, {}
 	local all = {color, direction, distance, "color", "direction", "distance"}
-	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}} -- adjusts to posititon
+	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}} -- adjustments to posititon
 	
 	libError(shadow[1] == nil, "shadow", "values not defined", nil, origin, 1)
 
@@ -191,8 +191,8 @@ local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale,
 	ShaBy = 1
 end
 
-local function LIB_pBoard(text, textX, textY, textColor, bColor, distance, fixed, scale, smallfont, onCenter)
-	-- position and adjust for them
+local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, distance, smallfont, onCenter)
+	-- position and adjustment for them
 	local x, y = 0, 0
 	local less = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 	
@@ -254,7 +254,7 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, onCe
 				LIB_pShadow(text[i], x, y, color, effect[2], fixed, scale, smallfont)
 			
 			elseif effect[1] == "board" then
-				LIB_pBoard( text[i], x, y, color, effect[2], effect[3], fixed, scale, smallfont)
+				LIB_pBorder( text[i], x, y, color, effect[2], fixed, scale, effect[3], smallfont)
 			end
 		end
 		
