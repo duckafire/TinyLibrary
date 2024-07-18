@@ -1,6 +1,6 @@
 -- NAME:    Magic Pallete
 -- AUTHOR:  DuckAfire
--- VERSION: 2.0.0
+-- VERSION: 2.0.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -68,7 +68,7 @@ local function LIB_sort(orgCode, order, low)
 	error('\n\n[Magic_Palette]\nUnvalid "order".\nTry values between zero and three.\nFunction: "sortCode"\nParameter: #2\n')
 end
 
-local function LIB_save(hex)
+local function LIB_save(hex, hyphen)
 	local code = {}
 	
 	if hex then   code = ""   end
@@ -79,6 +79,8 @@ local function LIB_save(hex)
 		for j = 0, 2 do
 			if hex then
 				code = code..string.format("%x", peek(AD + i * 3 + j)) -- hexadecimal (string)
+				
+				if hyphen and i < 15 then code = code.."-" end -- space between codes
 			else
 				code[i][j] = peek(AD + i * 3 + j) -- decimal (sub-tables)
 			end
@@ -131,7 +133,7 @@ local function LIB_swap(code, id)
 	if     string.sub(code, 1, 4) == "000:" then code = string.sub(code, 5)
 	elseif string.sub(code, 1, 1) == "#"    then code = string.sub(code, 2)
 	end
-	
+
 	-- function core
 	local function rgb(v, ifPalette)
 		-- to edit all colors; store a snippet of the "code"; LoCaLe of color code
@@ -146,6 +148,8 @@ local function LIB_swap(code, id)
 	
 	-- swap all colors (palette)
 	if id == "palette" then
+		code = string.gsub(code, "-", "")
+		
 		for i = 0, 15 do rgb(i, 6 * i) end
 		return
 	end
@@ -160,19 +164,28 @@ local function LIB_swap(code, id)
 	rgb(tonumber(id))
 end
 
-local function LIB_shine(speed, tbl)
+local function LIB_shine(speed, id, tbl)
 	local qtt = 0 -- quantity of color in min/max
 
 	speed = speed and math.floor(speed) or 1 -- update speed
 	
+	local imin, imax = 0, 15
+
+	if id ~= nil then
+		imin = id
+		imax = id
+
+		tbl = {[id] = tbl[1]} -- move shade values
+	end
+
 	local cur, min, max, value
-	for i = 0, 15 do -- color index
+	for i = imin, imax do -- color index
 		for j = 0, 2 do -- rgb
 		
 			cur = peek(AD + i * 3 + j)
 			
-			min = type(tbl) == "table" and tbl[i][j] or 0
-			max = type(tbl) == "table" and tbl[i][j] or 255
+			min = type(tbl) ~= "table" and 0   or tbl[i][j]
+			max = type(tbl) ~= "table" and 255 or tbl[i][j]
 			
 			if speed <= 0 then
 				value = (cur + speed >= min) and cur + speed or min -- less
