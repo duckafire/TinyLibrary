@@ -1,6 +1,6 @@
 -- NAME:    LongBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.4.2
+-- VERSION: 3.4.3
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -16,7 +16,7 @@
 -- 1. The origin of this software must not be misrepresented; you must not
 --    claim that you wrote the original software. If you use this software
 --    in a product, an acknowledgment in the product documentation would be
---    appreciated but is not required. 
+--    appreciated but is not required.
 -- 2. Altered source versions must be plainly marked as such, and must not be
 --    misrepresented as being the original software.
 -- 3. This notice may not be removed or altered from any source distribution.
@@ -90,6 +90,12 @@ local function classToId(funcName, argID, id)
 	libError(nil, nil, "Invalid class: "..id, nil, funcName, argID)
 end
 
+local function ckID(itemID, func, id)
+	libError(itemID < 1 or itemID > 9, "itemID", "3", nil, func, id)
+	
+	return itemID + 1 -- 1-9 -> 2-10
+end
+
 
 
 ----- GET VALUE -----
@@ -98,7 +104,7 @@ local function LIB_getNum(itemID, className, length)
 	local origin = {"getNum", "getBool"}
 	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], 1)
 	
-	itemID = itemID + 1
+	itemID = ckID(itemID, origin[GetBy], 1)
 	length = length or 1
 	
 	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], 3)
@@ -115,8 +121,8 @@ local function LIB_getBool(itemID, className, equal, length)
 	return LIB_getNum(itemID, className, length) == (equal or 1)
 end
 
-local function LIB_getClass(id, wasDefined)
-	libError(wasDefined and not LBC[id], "class", "3", nil, "getClass", 1)
+local function LIB_getClass(id)
+	libError(id < 0 or id > 255, "id", "3", nil, "getClass", 1)
 
 	return LBC[id]
 end
@@ -170,9 +176,12 @@ local function LIB_setNum(newValue, itemID, className, length)
 	local pmemID  = classToId("setMem", 3, className)
 	local value   = nil
 
-	itemID = itemID + 1
+	itemID = ckID(itemID, "setNum", 2) -- from 2 to next
 	length = length or 1
-	
+
+	libError(itemID < 1 or itemID > 9, "itemID", "3",                     nil, "setNum", 2)
+	libError(itemID + length >= 10,    nil,      "'Sub-Memory' overflow", nil, "setNum", 4)
+
 	-- convert boolean to binary
 	if type(newValue) == "boolean" then
 		value = newValue and 1 or 0
@@ -225,13 +234,16 @@ end
 
 local function LIB_boot(memID, replace, init, left, empty)
 	init = init or 0
-	empty = tonumber(empty) ~= nil and empty or "0"
+	empty = tonumber(empty) ~= nil and empty or 0
 	local id, value = 0, ""
 	
-	libError(#memID > 256, nil, "The table specified is bigger that 256", nil, "boot", 1)
-	libError(init + #memID - 1 > 255, nil, "The value result addition of "..init.." (#3) with "..(#memID - 1).." (#1) is bigger of 256", nil, "boot", 3)
+	local max = init + #memID - 1
+	libError(init < 0 or init > 255,  "init",  "3",                                      nil, "boot", 3)
+	libError(#memID > 256,            nil,     "The table specified is bigger that 256", nil, "boot", 1)
+	libError(max > 255,               nil,     "Index overflow",                         nil, "boot", 1)
+	libError(empty < 0 or empty > 9,  "empty", "3",                                      nil, "boot", 5)
 
-	for i = init, init + #memID - 1 do
+	for i = init, max do
 		id = id + 1
 
 		if pmem(i) <= ZERO or replace then
@@ -241,7 +253,7 @@ local function LIB_boot(memID, replace, init, left, empty)
 			libError(type(    value) ~= "string", nil, value.." is not a string",                       nil, "boot", 1)
 			libError(tonumber(value) == nil,      nil, value.." cannot be converted to number",         nil, "boot", 1)
 			libError(tonumber(value) > 999999999, nil, value.." is too big.\nThe maximum is 999999999", nil, "boot", 1)
-				
+			
 			-- fill empty spaces
 			while #value < 9 do
 				if left then
@@ -293,8 +305,10 @@ local function LIB_clear(Type, absolute, init, max)
 	init = init or 0
 	max  = max  or 255
 
+	libError(init < 0,   "init", "3", "clear", 3)
+	libError(max  > 255, "max",  "3", "clear", 4)
+
 	local changed = false
-	local memZero = absolute and 0 or ZERO
 
 	if Type == "memory" or Type == "all" then
 		for i = init, max do
@@ -308,19 +322,20 @@ local function LIB_clear(Type, absolute, init, max)
 		LBC = {}
 	end
 	
-	if Type == "lessClass" then
+	-- clear memories without class
+	if Type == "noneClass" then
 		for i = init, max do
-			-- check if a class not are defined to this memory
-			if LBC[i] ~= nil then
+			if LBC[i] == nil then
 				changed = true
-				pmem(i, memZero)
+				pmem(i, (absolute) and 0 or ZERO)
 			end
 		end
 	end
 
+	-- clear classes without memory
 	if Type == "noneMemory" then
 		for i = init, max do
-			if LBC[i] ~= nil and pmem(i) < ZERO and pmem(i) > MAX then
+			if pmem(i) < ZERO or pmem(i) > MAX then
 				changed = true
 				LBC[i] = nil
 			end
@@ -336,6 +351,7 @@ end
 
 local function LIB_swapClass(newName, id)
 	libError(type(newName) ~= "string", "newValue", "is not a string", nil, "swapClass", 1)
+	libError(id < 0 or id > 255, "id", "3", nil, "swapClass", 2)
 
 	local wasDefined = LBC[id]
 	LBC[id] = newName
