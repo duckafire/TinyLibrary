@@ -172,6 +172,8 @@ local function LIB_shine(speed, id, tbl)
 	local imin, imax = 0, 15
 
 	if id ~= nil then
+		libError(id < 0 or id > 15, "id", "3", nil, "shine", "2")
+
 		imin = id
 		imax = id
 

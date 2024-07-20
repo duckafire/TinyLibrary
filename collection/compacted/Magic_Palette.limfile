@@ -1,0 +1,26 @@
+-- NAME:    Magic_Palette
+-- AUTHOR:  DuckAfire
+-- VERSION: 2.0.1
+-- LICENSE: Zlib License
+--
+-- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
+--
+-- This software is provided 'as-is', without any express or implied
+-- warranty. In no event will the authors be held liable for any damages
+-- arising from the use of this software.
+--
+-- Permission is granted to anyone to use this software for any purpose,
+-- including commercial applications, and to alter it and redistribute it
+-- freely, subject to the following restrictions:
+--
+-- 1. The origin of this software must not be misrepresented; you must not
+--    claim that you wrote the original software. If you use this software
+--    in a product, an acknowledgment in the product documentation would be
+--    appreciated but is not required.
+-- 2. Altered source versions must be plainly marked as such, and must not be
+--    misrepresented as being the original software.
+-- 3. This notice may not be removed or altered from any source distribution.
+
+local DA3={}
+do local T21,SL8,SU16,SS14,A0,E3,SF4,P46,T19,MF8,P52,SG6=type,string.lower,string.upper,string.sub,assert,error,string.format,peek,tonumber,math.floor,poke,string.gsub local AD=0x03fc0 DA3.sort=function(a,b,c)local d={}b=b or 0 if T21(a)=="string" then local e=a.."000000" local f=c and SL8 or SU16 for g=1,5,2 do d[#d+1]=f(SS14(e,g,g+1))end elseif T21(a)=="table" then d=a else A0(d~=nil,'\n\n[Magic_Palette]\n"code" not specififed.\nFunction: "sortCode"\nParameter: #1\n')end for g=1,3 do if not d[g]then d[g]=0 end end if b==0 then return d[1],d[2],d[3]end if b==1 then return d end if b==2 then return{red=d[1],green=d[2],blue=d[3]}end if b==3 then if h then return"#"..d[1]..d[2]..d[3]end return d[1]..", "..d[2]..", "..d[3] end E3('\n\n[Magic_Palette]\nUnvalid "order".\nTry values between zero and three.\nFunction: "sortCode"\nParameter: #2\n')end DA3.save=function(a,b)local c={}if a then c="" end for d=0,15 do if not a then c[d]={}end for e=0,2 do if a then c=c..SF4("%x",P46(AD+d*3+e)) if b and d<15 then c=c.."-" end else c[d][e]=P46(AD+d*3+e) end end end return c end DA3.toDec=function(a,b)local c={}a=T21(a)=="table" and a[1]or a a=SS14(a,1,1)=="#" and SS14(a,2)or a local d for e=0,2 do d=e+1+(e*1) c[e+1]=T19(SS14(a,d,d+1),16)end return f(c,b)end DA3.toHex=function(a,b,c)local d="" for e=1,3 do if a[e]<0 then a[e]=0 elseif a[e]>255 then a[e]=255 end d=d..SF4("%x",MF8(a[e]))end return f(d,b,c)end DA3.swap=function(a,b)if SS14(a,1,4)=="000:" then a=SS14(a,5)elseif SS14(a,1,1)=="#" then a=SS14(a,2)end local function c(d,e)local f,g,h=e or 0 for i=0,2 do g=i+1+(i*1)h=T19(SS14(a,g+f,g+1+f),16)P52(AD+d*3+i,h)end end if b=="palette" then a=SG6(a,"-","")for i=0,15 do c(i,6*i)end return end if b=="equal" then for i=0,15 do c(i)end return end c(T19(b))end DA3.shine=function(a,b,c)local d=0 a=a and MF8(a)or 1 local e,f=0,15 if b~=nil then g(b<0 or b>15,"id","3",nil,"shine","2")e=b f=b c={[b]=c[1]} end local h,i,j,k for l=e,f do for m=0,2 do h=P46(AD+l*3+m)i=T21(c)~="table" and 0 or c[l][m]j=T21(c)~="table" and 255 or c[l][m]if a<=0 then k=(h+a>=i)and h+a or i else k=(h+a<=j)and h+a or j end P52(AD+l*3+m,k)if k==i or k==j then d=d+1 end end end if d==48 and MF8(a)~=0 then return a<0 and-1 or 1 end return 0 end end
+--local reference=DA3

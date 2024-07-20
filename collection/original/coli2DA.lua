@@ -58,21 +58,31 @@ local function libError(condAssert, par, msg, opt, func, id)
 	error(full.."\n")
 end
 
------ CONSTANTS -----
+----- VARIABLES AND TABLES -----
 
-local RE, CI, SI, W, H, R = "rect", "circ", "simp", "width", "height", "radius"
+local RE, CI, SI, W, H, R = "rect", "circ", "simp", "width", "height", "radius" -- constants
+local ByBd, OrgBd = 1, {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"} -- to errors in body
 
 ----- HEAD OF LIBRARY -----
 
 local function LIB_newBody(Type, x, y, width_radius, height)
-	if Type == RE then return {x = x, y = y, width  = width_radius or 8, height = height or 8} end
-	if Type == CI then return {x = x, y = y, radius = width_radius or 4} end
-	if Type == SI then return {x = x, y = y} end
+	local new = nil
 
-	libError(nil, "type", "3", {RE, CI, SI}, "newBody", 1)
+	if Type == RE then new = {x = x, y = y, width  = width_radius or 8, height = height or 8} end
+	if Type == CI then new = {x = x, y = y, radius = width_radius or 4} end
+	if Type == SI then new = {x = x, y = y} end
+
+	libError(new == nil, "type", "3", {RE, CI, SI}, OrgBd[ByBd], 1)
+
+	local par = {"x", "y"}
+	for i = 1, 2 do   libError(new[par[i]] == nil, par[i], "3", nil, OrgBd[ByBd], 1 + i)   end
+
+	return new
 end
 
-local function ckbd(_bodies, types)
+local function ckbd(_bodies, types, id) -- internal function
+	ByBd = id
+	
 	-- break adress link
 	local bodies = {}
 	for i = 1, #_bodies do
@@ -93,7 +103,8 @@ local function ckbd(_bodies, types)
 			bodies[i][H] or bodies[i][4]
 		)
 	end
-
+	
+	ByBd = 1
 	return table.unpack(new)
 end
 
@@ -102,13 +113,13 @@ end
 ----- GEOGRAFY AND MATH -----
 
 local function LIB_distance(objA, objB)
-	objA, objB = ckbd({objA, objB}, {SI, SI})
+	objA, objB = ckbd({objA, objB}, {SI, SI}, 2)
 
 	return math.sqrt((objA.x - objB.x) ^ 2 + (objA.y - objB.y) ^ 2)
 end
 
 local function LIB_mapAlign(obj, onCenter)
-	obj = ckbd({obj}, {(onCenter) and RE or SI})
+	obj = ckbd({obj}, {(onCenter) and RE or SI}, 3)
 	
 	if onCenter then -- aproximmated
 		obj[W] = obj[W] or 8
@@ -125,7 +136,7 @@ end
 ----- MAP -----
 
 local function LIB_tile(obj, Type, flag, mapX, mapY)
-	obj = ckbd({obj}, {RE})
+	obj = ckbd({obj}, {RE}, 4)
 	
 	local x1, y1, x2, y2
 	local w, h = obj[W], obj[H]
@@ -141,7 +152,7 @@ local function LIB_tile(obj, Type, flag, mapX, mapY)
 end
 
 local function LIB_tileCross(obj, associative, flag, mapX, mapY)
-	obj = ckbd({obj}, {RE})
+	obj = ckbd({obj}, {RE}, 5)
 	
 	-- Flag TaBLe
 	local ftbl = {}
@@ -173,7 +184,7 @@ end
 ----- SHAPES IMPACT -----
 
 local function LIB_rectangle(RectA, RectB, isSimp)
-	RectA, RectB = ckbd({RectA, RectB}, {(isSimp) and SI or RE, RE})
+	RectA, RectB = ckbd({RectA, RectB}, {(isSimp) and SI or RE, RE}, 6)
 	
 	if isSimp then rectA[W], rectA[H] = 1, 1 end
 	
@@ -182,7 +193,7 @@ local function LIB_rectangle(RectA, RectB, isSimp)
 end
 
 local function LIB_circle(CircA, CircB, isSimp)-- two circ bodies; boolean
-	CircA, CircB = ckbd({CircA, CircB}, {(isSimp) and SI or CI, CI})
+	CircA, CircB = ckbd({CircA, CircB}, {(isSimp) and SI or CI, CI}, 7)
 	
 	local totalRadius = (isSimp) and CircB[R] or CircA[R] + CircB[R]
 	
@@ -190,7 +201,7 @@ local function LIB_circle(CircA, CircB, isSimp)-- two circ bodies; boolean
 end
 
 local function LIB_shapesMix(Circ, Rect)-- circ and rect object
-	Circ, Rect = ckbd({Circ, Rect}, {CI, RE})
+	Circ, Rect = ckbd({Circ, Rect}, {CI, RE}, 8)
 
 	-- circle center with rectangle; approximated rectangle center with circle
 	if LIB_rectangle({Circ.x, Circ.y}, Rect, true) or LIB_circle({Rect.x + Rect[W] // 2, Rect.y + Rect[H] // 2}, Circ, true) then return true end
@@ -260,7 +271,7 @@ end
 local function LIB_impactPixel(mixA, minB, Type, force)
 	if Type ~= RE and Type ~= CI then libError(nil, "type", "3", {RE, CI}, "impactPixel", "(first)") end
 
-	mixA, mixB = ckbd({mixA, mixB}, {Type, Type})
+	mixA, mixB = ckbd({mixA, mixB}, {Type, Type}, 9)
 
 	if     Type == RE then
 		if not arg[tID + 1] and not LIB_rectangle(mixA, mixB) then return nil, nil end

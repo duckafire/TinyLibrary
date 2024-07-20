@@ -206,7 +206,7 @@ local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, 
 	bcolor   = bColor   or 15
 	distance = distance or scale
 	
-	-- draw boards
+	-- draw borders
 	for i = 1, 4 do
 		x = textX + less[i][1] * distance
 		y = textY + less[i][2] * distance
@@ -226,10 +226,10 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, onCe
 	-- check values from "effect"
 	if effect then
 		libError(type(effect) ~= "table", "effect", "1", nil, "pList", 10)
-		libError(effect[1] ~= "shadow" and effect[1] ~= "board", "effect[1]", "3", {"shadow", "board"}, "pList", 10)
+		libError(effect[1] ~= "shadow" and effect[1] ~= "border", "effect[1]", "3", {"shadow", "border"}, "pList", 10)
 		
 		if     effect[1] == "shadow" then libError(type(effect[2]) ~= "table",  "effect[2]", "is not a table", nil, "pList", 10)
-		elseif effect[1] == "board"  then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN",         nil, "pList", 10) -- #3 is optional (distance)
+		elseif effect[1] == "border"  then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN",         nil, "pList", 10) -- #3 is optional (distance)
 		end
 	end
 	
@@ -253,7 +253,7 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, onCe
 				ShaBy = 2
 				LIB_pShadow(text[i], x, y, color, effect[2], fixed, scale, smallfont)
 			
-			elseif effect[1] == "board" then
+			elseif effect[1] == "border" then
 				LIB_pBorder( text[i], x, y, color, effect[2], fixed, scale, effect[3], smallfont)
 			end
 		end

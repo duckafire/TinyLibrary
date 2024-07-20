@@ -1,0 +1,26 @@
+-- NAME:    print+
+-- AUTHOR:  DuckAfire
+-- VERSION: 4.2.3
+-- LICENSE: Zlib License
+--
+-- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
+--
+-- This software is provided 'as-is', without any express or implied
+-- warranty. In no event will the authors be held liable for any damages
+-- arising from the use of this software.
+--
+-- Permission is granted to anyone to use this software for any purpose,
+-- including commercial applications, and to alter it and redistribute it
+-- freely, subject to the following restrictions:
+--
+-- 1. The origin of this software must not be misrepresented; you must not
+--    claim that you wrote the original software. If you use this software
+--    in a product, an acknowledgment in the product documentation would be
+--    appreciated but is not required.
+-- 2. Altered source versions must be plainly marked as such, and must not be
+--    misrepresented as being the original software.
+-- 3. This notice may not be removed or altered from any source distribution.
+
+local DA2={}
+do local T63,E3,T21,P11,MA0,SF3,T19,SS14,T20,S60=trace,error,type,print,math.abs,string.find,tonumber,string.sub,tostring,spr local function libError(a,b,c,d,e,f)if a~=nil then if not a then return end end local g={"Error","Function","Index"}local h={nil,e,"#"..f}local i="\n\n[print+]"b=b and'"'..b..'"' or"" local function j(k)h[1]=b..k end if c=="1" then j("was not specified")elseif c=="2" then j("was not defined")elseif c=="3" then j("is invalid")else j(c)end for l=1,3 do i=i.."\n"..g[l]..": "..h[l].."." if l==1 and d~=nil then i=i.."\nTry: " for m=1,#d-1 do i=i.." | " end n=i..d[#d] end end T63("\n>\n>\n>")E3(i.."\n")end local LenBy, o=1,1 DA2.length=function(a,b,c,d,e)local f={"length","center","pCenter","pShadow","pBorder","pList"}libError(T21(a)~="string","text","1",nil,f[g],1)g=1 c=c or 1 e=e or 1 return P11(a,0,136,0,b,c,d),(6*c)*e end DA2.center=function(a,b,c,d,e,f,g)b,c=b or 0,c or 0 if h<2 then h=2 end local i,j=DA2.length(a,d,e,f,g)return b-i//2+1,c-j//2+1 end DA2.pCenter=function(a,b,c,d,e,f,g,h)i=3 b,c=DA2.center(a,b,c,e,f,g,h)P11(a,b,c,d,e,f or 1,g)end DA2.pShadow=function(a,b,c,d,e,f,g,h,i) local j=(k==1)and"pShadow" or"pList" local l={}if T21(e)=="number" then l[1]=e<0 and 0 or e>15 and 15 or MA0(e)l[1]=l[1].."-1" elseif T21(e)=="table" then for m=1,#e do l[m]=e[m]end else libError(nil,"shadow","is not a number or table",nil,j,5)end if i then n=4 b,c=DA2.center(a,b,c,f,g,h)end g=g or 1 local o,p,q="",0,0 local r,s,t={},{},{}local u={r,s,t,"color","direction","distance"}local v={[0]={0,-1},{0,1},{-1,0},{1,0}} libError(l[1]==nil,"shadow","values not defined",nil,j,1)for m=1,((#l<4)and#l or 4)do for w=1,2 do o=SF3(l[m],"-")if#l[m]==1 or T19(l[m])~=nil then o=0 end libError(o==nil,nil,"Hyphen not specified. In index #"..m..' of the table "shadow"',nil,j,1)if w==1 then r[m]=SS14(l[m],1,o-1)l[m]=SS14(l[m],o+1,#l[m])else s[m]=SS14(l[m],1,o-1)if o==0 then t[m]=g else t[m]=SS14(l[m],o+1,#l[m])end end for x=1,3 do if u[x][m]~=nil then u[x][m]=T19(u[x][m])end end end for w=1,3 do libError(T21(T19(u[w][m]))~="number",nil,"The element "..u[w+3]..' is NaN. In index #'..m..' of the table "shadow".',nil,j,1)end for x=2,3 do u[x][m]=(u[x][m]<0)and 0 or(u[x][m]>3)and 3 or u[x][m]end p=b+v[s[m]][1]*t[m]q=c+v[s[m]][2]*t[m]P11(a,p,q,r[m],f,g,h)end P11(a,b,c,d,f,g,h)k=1 end DA2.pBorder=function(a,b,c,d,e,f,g,h,i,j)local k,l=0,0 local m={{0,-1},{0,1},{-1,0},{1,0}}if j then n=5 b,c=DA2.center(a,b,c,f,g,i)end g=g or 1 o=e or 15 h=h or g for p=1,4 do k=b+m[p][1]*h l=c+m[p][2]*h P11(a,k,l,e,f,g,i)end P11(a,b,c,d,f,g,i)end DA2.pList=function(a,b,c,d,e,f,g,h,i,j)libError(T21(a)~="table","text","1",nil,"pList",1)d=d or 15 e=e or 10 if j then libError(T21(j)~="table","effect","1",nil,"pList",10)libError(j[1]~="shadow" and j[1]~="border","effect[1]","3",{"shadow","border"},"pList",10)if j[1]=="shadow" then libError(T21(j[2])~="table","effect[2]","is not a table",nil,"pList",10)elseif j[1]=="border" then libError(T21(j[2])~="number","effect[2]","is NaN",nil,"pList",10) end end local k,l=0,0 for m=1,#a do k=b or 0 l=(c or 0)+e*(m-1)if i then n=6 k,l=DA2.center(a[m],k,l-#a,f,g,h,#a)end if not j then P11(T20(a[m]),k,l,d,f,g or 1,h)else if j[1]=="shadow" then o=2 DA2.pShadow(a[m],k,l,d,j[2],f,g,h)elseif j[1]=="border" then DA2.pBorder(a[m],k,l,d,j[2],f,g,j[3],h)end end end end DA2.title=function(a,b,c,d,e,f,g,h)libError(T21(i)=="table",'"sprites"',"1",nil,"title",1)local j=nil if T21(g)=="number" then j={}for k=1,#a do l[k]=g end elseif T21(g)=="table" then j=g if#j<#a then for k=#j+1,#a do j[k]=0 end end else j={}for k=1,#a do j[k]=0 end end b,c=b or 0,c or 0 e=e or 1 f=f or 1 d=d or 8 d=d*f local m,n for k=1,#a do if h then m=b n=c+(d+e)*(k-1)else m=b+(d+e)*(k-1)n=c end S60(a[k],m,n,j[k],f)end end end
+--local reference=DA2

@@ -274,10 +274,37 @@ local function LIB_boot(memID, replace, init, left, empty)
 	return #memID == id
 end
 
-local function LIB_update(class, values, indexes)
+local function LIB_update(class, values, indexes, _lock) -- lock: pmemID/class, compare, newValue
 	libError(#values ~= #indexes, nil, "The quantity of values and indexes must be equal", nil, "update", "1-2")
 
 	local changed = false
+
+	if _lock then
+		-- adjustment argument
+		local lock, cond, isStr = _lock, nil, nil
+		if type(_lock) ~= "table" then   lock = {_lock}   end
+
+		-- get value
+		isStr = (type(lock[1]) == "string")
+		if isStr then
+			cond = (LIB_getAll(lock[1]) == (lock[2] or 0))
+		else
+			libError(lock[1] < 0 or lock[1] > 255, "lock[1]", "3", nil, "update", 4)
+			cond = (pmem(lock[1]) == (lock[2] or 0))
+		end
+
+		-- change already applied
+		if cond then
+			if isStr then
+				LIB_setAll(lock[3] or 1, lock[1])
+			else
+				pmem(lock[1], lock[3] or 1)
+			end
+		else
+			return false
+		end
+	end
+
 	for i = 1, 9 do
 		if i == indexes[i] then
 			LIB_setNum(values[i], indexes[i], class, #tostring(values[i]))
