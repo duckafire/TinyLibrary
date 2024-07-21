@@ -60,22 +60,13 @@ end
 
 
 
------ CONSTANTS -----
+----- VARIABLES AND TABLES -----
 
-local ZERO = 2000000000
+local ZERO = 2000000000 -- constants
 local MAX  = 2999999999
-
-
-
------ STORE CHANGES -----
-
 local LBC = {} -- LongBit-Classes
 local CID = {} -- Classes-InDex (it stores the index of spaces used in LCB)
-
-
------ ACTION CONTROLS -----
-
-local GetBy = 1
+local GetBy = 1 -- action control
 
 
 

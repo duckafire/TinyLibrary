@@ -63,7 +63,9 @@ end
 ----- ACTION CONTROLS -----
 
 -- LENght called BY itself, center or pCenter | pSHAdow called BY LIB_pList (only)
-local LenBy, ShaBy = 1, 1
+local LenBy = 1
+local ShaBy = 1
+--local LenBy, ShaBy = 1, 1
 
 
 

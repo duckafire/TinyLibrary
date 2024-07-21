@@ -60,8 +60,18 @@ end
 
 ----- VARIABLES AND TABLES -----
 
-local RE, CI, SI, W, H, R = "rect", "circ", "simp", "width", "height", "radius" -- constants
-local ByBd, OrgBd = 1, {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"} -- to errors in body
+local RE = "rect"
+local CI = "circ"
+local SI = "simp"
+local W  = "width"
+local H  = "height"
+local R  = "radius"
+local ByBd  = 1
+local OrgBd = {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"}
+-- local RE, CI, SI, W, H, R = "rect", "circ", "simp", "width", "height", "radius" -- constants
+-- local ByBd, OrgBd = 1, {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"} -- to errors in body
+
+
 
 ----- HEAD OF LIBRARY -----
 
