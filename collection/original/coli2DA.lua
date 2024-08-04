@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 4.0.0
+-- VERSION: 4.0.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -49,8 +49,8 @@ local function libError(condAssert, par, msg, opt, func, id)
 
 		if i == 1 and opt ~= nil then
 			full = full.."\nTry: "
-			for j = 1, #opt - 1 do full = full.." | " end
-			fulll = full..opt[#opt] -- without '|'
+			for j = 1, #opt - 1 do full = full..opt[i].." | " end
+			full = full..opt[#opt] -- without '|'
 		end
 	end
 
@@ -78,9 +78,10 @@ local OrgBd = {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangl
 local function LIB_newBody(Type, x, y, width_radius, height)
 	local new = nil
 
-	if Type == RE then new = {x = x, y = y, width  = width_radius or 8, height = height or 8} end
-	if Type == CI then new = {x = x, y = y, radius = width_radius or 4} end
-	if Type == SI then new = {x = x, y = y} end
+	if     Type == RE then new = {x = x, y = y, width  = width_radius or 8, height = height or 8}
+	elseif Type == CI then new = {x = x, y = y, radius = width_radius or 4}
+	elseif Type == SI then new = {x = x, y = y}
+	end
 
 	libError(new == nil, "type", "3", {RE, CI, SI}, OrgBd[ByBd], 1)
 
@@ -94,17 +95,27 @@ local function ckbd(_bodies, types, id) -- internal function
 	ByBd = id
 	
 	-- break adress link
-	local bodies = {}
+	local bodies, nodes, length
+	
+	bodies = {}
+	nodes  = {"x", "y", "width", "height"} -- "only" RECT and SIMP
+	length = {[RE] = 4, [CI] = 3, [SI] = 2}
+
 	for i = 1, #_bodies do
-		for j = 1, #_bodies[i] do
-			bodies[i][j] = _bodies[i][j]
+		bodies[i] = {}
+		for j = 1, length[types[i]] do
+			if types[i] == CI and j == 3 and _bodies[i][R] ~= nil then
+				bodies[i][j] = _bodies[i][R]
+			else
+				bodies[i][j] = _bodies[i][nodes[j]] or _bodies[i][j]
+			end
 		end
 	end
 	
 	-- create
 	local new = {}
 	
-	for i = 1, #bodies do
+	for i = 1, #_bodies do
 		new[i] = LIB_newBody(
 			types[i],
 			bodies[i].x  or bodies[i][1],
@@ -148,6 +159,9 @@ end
 local function LIB_tile(obj, Type, flag, mapX, mapY)
 	obj = ckbd({obj}, {RE}, 4)
 	
+	mapX = mapX or 0
+	mapY = mapY or 0
+
 	local x1, y1, x2, y2
 	local w, h = obj[W], obj[H]
 	
@@ -193,28 +207,39 @@ end
 
 ----- SHAPES IMPACT -----
 
-local function LIB_rectangle(RectA, RectB, isSimp)
-	RectA, RectB = ckbd({RectA, RectB}, {(isSimp) and SI or RE, RE}, 6)
+local function LIB_rectangle(RectA, RectB)
+	local rects, nodes = {RectA, RectB}, {W, H}
+	for i = 1, 2 do
+		for j = 3, 4 do
+			if not rects[i][j] and not rects[i][nodes[j]] then
+				rects[i][j] = 1
+			end
+		end
+	end
 	
-	if isSimp then rectA[W], rectA[H] = 1, 1 end
-	
-	return math.max(rectA.x, rectB.x) < math.min(rectA.x + rectA[W], rectB.x + rectB[W]) and
-	       math.max(rectA.y, rectB.y) < math.min(rectA.y + rectA[H], rectB.y + rectB[H])
+	rects[1], rects[2] = ckbd({rects[1], rects[2]}, {RE, RE}, 6)
+
+	return math.max(rects[1].x, rects[2].x) < math.min(rects[1].x + rects[1][W], rects[2].x + rects[2][W]) and
+	       math.max(rects[1].y, rects[2].y) < math.min(rects[1].y + rects[1][H], rects[2].y + rects[2][H])
 end
 
-local function LIB_circle(CircA, CircB, isSimp)-- two circ bodies; boolean
-	CircA, CircB = ckbd({CircA, CircB}, {(isSimp) and SI or CI, CI}, 7)
-	
-	local totalRadius = (isSimp) and CircB[R] or CircA[R] + CircB[R]
-	
-	return (CircA.x - CircB.x) ^ 2 + (CircA.y - CircB.y) ^ 2 <= totalRadius ^ 2
+local function LIB_circle(CircA, CircB)-- two circ bodies; boolean
+	local circs = {CircA, CircB}
+	for i = 1, 2 do
+		if not circs[i][3] and not circs[i][R] then
+			circs[i][3] = 0
+		end
+	end
+
+	circs[1], circs[2] = ckbd({circs[1], circs[2]}, {CI, CI}, 7)
+	return (circs[1].x - circs[2].x) ^ 2 + (circs[1].y - circs[2].y) ^ 2 <= (circs[1][R] + circs[2][R]) ^ 2
 end
 
 local function LIB_shapesMix(Circ, Rect)-- circ and rect object
 	Circ, Rect = ckbd({Circ, Rect}, {CI, RE}, 8)
 
 	-- circle center with rectangle; approximated rectangle center with circle
-	if LIB_rectangle({Circ.x, Circ.y}, Rect, true) or LIB_circle({Rect.x + Rect[W] // 2, Rect.y + Rect[H] // 2}, Circ, true) then return true end
+	if LIB_rectangle({Circ.x, Circ.y}, Rect) or LIB_circle({Rect.x + Rect[W] // 2, Rect.y + Rect[H] // 2}, Circ) then return true end
 
 	-- create a square inside circle
 	local widHei = Circ[R] * math.sqrt(2)
@@ -250,7 +275,7 @@ local function LIB_shapesMix(Circ, Rect)-- circ and rect object
 	local init, final = lines[distID][1], lines[distID][2]
 
 	while true do
-		if LIB_circle({init[1], init[2]}, Circ, true)  then return true  end -- point of collision
+		if LIB_circle({init[1], init[2]}, Circ)        then return true  end -- point of collision
 		if init[1] == final[1] and init[2] == final[2] then return false end -- end of loop
 
 		init[1] = (init[1] + 1 < final[1]) and init[1] + 1 or final[1] -- x
@@ -278,29 +303,27 @@ end
 
 ----- POINT OF IMPACT -----
 
-local function LIB_impactPixel(mixA, minB, Type, force)
-	if Type ~= RE and Type ~= CI then libError(nil, "type", "3", {RE, CI}, "impactPixel", "(first)") end
+local function LIB_impactPixel(Type, mixA, mixB, force)
+	libError(Type ~= RE and Type ~= CI, "type", "3", {RE, CI}, OrgBd[9], "(first)")
 
 	mixA, mixB = ckbd({mixA, mixB}, {Type, Type}, 9)
 
-	if     Type == RE then
-		if not arg[tID + 1] and not LIB_rectangle(mixA, mixB) then return nil, nil end
+	if Type == RE then
+		if not force and not LIB_rectangle(mixA, mixB) then return nil, nil end
 
-		local newMixA = {  x = mixA.x + mixA[W] / 2,   y = mixA.y + mixA[H] / 2,   radius = (mixA[W] + mixA[H]) / 2  }
-		local newMixB = {  x = mixB.x + mixB[W] / 2,   y = mixB.y + mixB[H] / 2,   radius = (mixB[W] + mixB[H]) / 2  }
-		
-		return LIB_impactPixel(newMixA, newMixB, CI, true)
+		local newMixA = {x = mixA.x + mixA[W] / 2, y = mixA.y + mixA[H] / 2, [R] = (mixA[W] + mixA[H]) / 2}
+		local newMixB = {x = mixB.x + mixB[W] / 2, y = mixB.y + mixB[H] / 2, [R] = (mixB[W] + mixB[H]) / 2}
+
+		return LIB_impactPixel(CI, newMixA, newMixB, true)
 	end
-	
+
 	if Type == CI then
-		if not force and not LIB_circle(mixA, mixB) then
-			return nil, nil
-		end
+		if not force and not LIB_circle(mixA, mixB) then return nil, nil end
 
 		local x = (mixA.x * mixB[R]) + (mixB.x * mixA[R])
 		local y = (mixA.y * mixB[R]) + (mixB.y * mixA[R])
 		local totalRadius = (mixA[R] + mixB[R])
-	
+
 		return x / totalRadius, y / totalRadius
 		
 	end
