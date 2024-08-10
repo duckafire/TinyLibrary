@@ -35,7 +35,7 @@ local function libError(condAssert, par, msg, opt, func, id)
 	local text = {nil, func, "#"..id}
 	local full = "\n\n[coli2DA]"
 
-	par = par and '"'..par..'"' or ""
+	par = par and '"'..par..'" ' or ""
 	local function cat(str) text[1] = par..str end
 
 	if     msg == "1" then cat("was not specified")

@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.2.3
+-- VERSION: 4.3.0
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -35,7 +35,7 @@ local function libError(condAssert, par, msg, opt, func, id)
 	local text = {nil, func, "#"..id}
 	local full = "\n\n[print+]"
 
-	par = par and '"'..par..'"' or ""
+	par = (par) and '"'..par..'" ' or ""
 	local function cat(str) text[1] = par..str end
 
 	if     msg == "1" then cat("was not specified")
@@ -49,8 +49,8 @@ local function libError(condAssert, par, msg, opt, func, id)
 
 		if i == 1 and opt ~= nil then
 			full = full.."\nTry: "
-			for j = 1, #opt - 1 do full = full.." | " end
-			fulll = full..opt[#opt] -- without '|'
+			for j = 1, #opt - 1 do full = full..opt[i].." | " end
+			full = full..opt[#opt] -- without '|'
 		end
 	end
 
@@ -105,7 +105,7 @@ local function LIB_pCenter(text, x, y, color, fixed, scale, smallfont, lines)
 	print(text, x, y, color, fixed, scale or 1, smallfont)
 end
 
-local function LIB_pShadow(text, textX, textY, textColor, _shadow, fixed, scale, smallfont, onCenter) -- the last is a internal parameter
+local function LIB_pShadow(text, _shadow, textX, textY, textColor, fixed, scale, smallfont, onCenter) -- the last is a internal parameter
 	local origin = (ShaBy == 1) and "pShadow" or "pList"
 	local shadow = {}
 	
@@ -205,7 +205,7 @@ local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, 
 
 	-- obtain values (specified or default)
 	scale    = scale    or 1
-	bcolor   = bColor   or 15
+	bcolor   = bColor   or 0
 	distance = distance or scale
 	
 	-- draw borders
@@ -219,41 +219,62 @@ local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, 
 	print(text, textX, textY, textColor, fixed, scale, smallfont)
 end
 
-local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, onCenter, effect)
+local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, align, onCenter, effect)
 	libError(type(text) ~= "table", "text", "1", nil, "pList", 1)
 	
-	color = color or 15
-	space = space or 10 -- vertical
+	X, Y = X or 0, Y or 0
+	scale = scale or 1
+	space = space or 13 * scale
+	align = align or -1
 	
 	-- check values from "effect"
 	if effect then
 		libError(type(effect) ~= "table", "effect", "1", nil, "pList", 10)
 		libError(effect[1] ~= "shadow" and effect[1] ~= "border", "effect[1]", "3", {"shadow", "border"}, "pList", 10)
 		
-		if     effect[1] == "shadow" then libError(type(effect[2]) ~= "table",  "effect[2]", "is not a table", nil, "pList", 10)
+		if     effect[1] == "shadow" then libError(type(effect[2]) ~= "table" and type(effect[2]) ~= "number",  "effect[2]", "is not a table or number", nil, "pList", 10)
 		elseif effect[1] == "border"  then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN",         nil, "pList", 10) -- #3 is optional (distance)
 		end
 	end
 	
+	-- adjustment axis
+	local blen = 0 -- used only if 'align ~= -1'
+	if onCenter or align ~= -1 then
+		local bigger = 0
+		for i = 1, #text do
+			if bigger < #text[i] then
+				bigger = i
+			end
+		end
+		LenBy = 6
+		if onCenter then
+			X, Y = LIB_center(text[bigger], X, Y - #text, fixed, scale, smallfont, #text)
+		end
+		blen = LIB_length(text[bigger], fixed, scale, smallfont) -- Big LENgth
+	end
+
 	local x, y = 0, 0
 	for i = 1, #text do
-		-- original positions
-		x =  X or 0
-		y = (Y or 0) + space * (i - 1)
+		-- restart to original positions
+		x = X
+		y = Y + space * (i - 1)
 		
-		if onCenter then
+		if align ~= -1 then
 			LenBy = 6
-			x, y = LIB_center(text[i], x, y - #text, fixed, scale, smallfont, #text)
+
+			if     align == 0 then x = LIB_center(text[i], x + blen // 2, y, fixed, scale, smallfont)
+			elseif align == 1 then x = x + blen - LIB_length(text[i], fixed, scale, smallfont)
+			end
 		end
 		
 		-- write text
 		if not effect then
-			print(tostring(text[i]), x, y, color, fixed, scale or 1, smallfont)
+			print(tostring(text[i]), x, y, color, fixed, scale, smallfont)
 		
 		else
 			if effect[1] == "shadow" then
 				ShaBy = 2
-				LIB_pShadow(text[i], x, y, color, effect[2], fixed, scale, smallfont)
+				LIB_pShadow(text[i], effect[2], x, y, color, fixed, scale, smallfont)
 			
 			elseif effect[1] == "border" then
 				LIB_pBorder( text[i], x, y, color, effect[2], fixed, scale, effect[3], smallfont)
@@ -268,46 +289,73 @@ end
 
 ----- USE SPRITES -----
 
-local function LIB_title(sprites, X, Y, widHei, space, scale, chromaKey, vertical)
+local function LIB_title(sprites, X, Y, chromaKey, space, scale, width, height, _flip, _rotate, alignX, alignY, vertical, dimw, dimh)
 	libError(type(strites) == "table", '"sprites"', "1", nil, "title", 1)
+
+	-- flip and rotate
+	local flip, rotate, value = {}, {}, 0
 	
+	if type(_flip) ~= "table" then
+		value = _flip or 0
+		for i = 1, #sprites do flip[i] = value end
+	else
+		flip = _flip
+	end
+	
+	if type(_rotate) ~= "table" then
+		value = _rotate or 0
+		for i = 1, #sprites do rotate[i] = value end
+	else
+		rotate = _rotate
+	end
+	
+	local function err(tbl, stbl, id) libError(#sprites > #tbl, stbl, "has a insuficient quatity of indexes", "title", id) end
+	err(flip,   "flip",    9)
+	err(rotate, "rotate", 10)
+		
+	-- chroma key
 	local chKey = nil -- table to store the chromaKey colors
 	
 	if     type(chromaKey) == "number" then
 		chKey = {}
-		for i = 1, #sprites do   back[i] = chromaKey   end -- one index to all index in table
+		for i = 1, #sprites do chKey[i] = chromaKey end -- one index to all index in table
 	
 	elseif type(chromaKey) == "table"  then
+		err(chromaKey, "chromaKey", 4)
 		chKey = chromaKey
-		if #chKey < #sprites then
-			for i = #chKey + 1, #sprites do   chKey[i] = 0   end -- fill with default (0)
-		end
 
 	else
 		chKey = {}
-		for i = 1, #sprites do   chKey[i] = 0   end -- default value (0)
+		for i = 1, #sprites do chKey[i] = 0 end -- default value (0)
 
 	end
 	
 	-- default values
 	X, Y = X or 0, Y or 0
-	space  = space  or 1
-	scale  = scale  or 1
-	widHei = widHei or 8
+	scale  = scale or 1
+	space  = space or 1
+	dimw   = dimw or 1
+	dimh   = dimh or 1
+	width  = (width  or 8) * scale
+	height = (height or 8) * scale
 
-	widHei = widHei * scale
-	
+	-- alignment
+	local alx, aly = 0, 0
+	if alignX then alx = (vertical) and (width // 2) or ((width  + space) * #sprites - space) // 2    end
+	if alignY then aly = (vertical) and (((height + space) * #sprites - space) // 2) or (height // 2) end
+
+	-- draw
 	local x, y
 	for i = 1, #sprites do
 		if vertical then
-			x = X
-			y = Y + (widHei + space) * (i - 1)
+			x = X - alx
+			y = Y + ((height + space) * (i - 1)) - aly
 		else
-			x = X + (widHei + space) * (i - 1)
-			y = Y
+			x = X + ((width  + space) * (i - 1)) - alx
+			y = Y - aly
 		end
 		
-		spr(sprites[i], x, y, chKey[i], scale)
+		spr(sprites[i], x, y, chKey[i], scale, flip[i], rotate[i], dimw, dimh)
 	end
 	
 end
