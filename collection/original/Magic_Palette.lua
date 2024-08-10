@@ -1,6 +1,6 @@
 -- NAME:    Magic Pallete
 -- AUTHOR:  DuckAfire
--- VERSION: 2.0.1
+-- VERSION: 2.1.0
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -23,9 +23,46 @@
 
 
 
+----- DEFAULT -----
+
+local function libError(condAssert, par, msg, opt, func, id)
+	-- "assert" be like
+	if condAssert ~= nil then
+		if not condAssert then return end
+	end
+	
+	local default = {"Error", "Function", "Index"}
+	local text = {nil, func, "#"..id}
+	local full = "\n\n[MagicPalette]"
+
+	par = par and '"'..par..'" ' or ""
+	local function cat(str) text[1] = par..str end
+
+	if     msg == "1" then cat("was not specified")
+	elseif msg == "2" then cat("was not defined")
+	elseif msg == "3" then cat("is invalid")
+	else                   cat(msg)
+	end
+
+	for i = 1, 3 do
+		full = full.."\n"..default[i]..": "..text[i].."."
+
+		if i == 1 and opt ~= nil then
+			full = full.."\nTry: "
+			for j = 1, #opt - 1 do full = full..opt[i].." | " end
+			full = full..opt[#opt] -- without '|'
+		end
+	end
+
+	trace("\n>\n>\n>")
+	error(full.."\n")
+end
+
+
+
 ----- CONSTANTS -----
 
-local AD = 0x03fc0-- ADdress
+local AD = 0x03fc0 -- ADdress
 
 
 
@@ -46,7 +83,7 @@ local function LIB_sort(orgCode, order, low)
 		code = orgCode
 
 	else
-		assert(code ~= nil, '\n\n[Magic_Palette]\n"code" not specififed.\nFunction: "sortCode"\nParameter: #1\n')
+		libError(nil, "orgCode", "3", nil, "sortCode", 1)
 	end
 
 	-- fill void spaces
@@ -65,7 +102,7 @@ local function LIB_sort(orgCode, order, low)
 		return code[1]..", "..code[2]..", "..code[3] -- decimal
 	end
 
-	error('\n\n[Magic_Palette]\nUnvalid "order".\nTry values between zero and three.\nFunction: "sortCode"\nParameter: #2\n')
+	libError(nil, "order", "3", {"0-3"}, "sortCode", 2)
 end
 
 local function LIB_save(hex, hyphen)
@@ -135,9 +172,9 @@ local function LIB_swap(code, id)
 	end
 
 	-- function core
-	local function rgb(v, ifPalette)
+	local function rgb(v, ifPal)
 		-- to edit all colors; store a snippet of the "code"; LoCaLe of color code
-		local add, lcl, color = ifPalette or 0
+		local add, lcl, color = ifPal or 0
 		
 		for i = 0, 2 do
 			lcl = i + 1 + (i * 1)
@@ -160,6 +197,8 @@ local function LIB_swap(code, id)
 		return
 	end
 
+	libError(type(id) ~= "number", "id", "3", {"palette", "equal", "0-15"}, "swap", 2)
+
 	-- edit one color
 	rgb(tonumber(id))
 end
@@ -169,7 +208,9 @@ local function LIB_shine(speed, id, tbl)
 
 	speed = speed and math.floor(speed) or 1 -- update speed
 	
+	local cur, value
 	local imin, imax = 0, 15
+	local isTable, min, max = (type(tbl) == "table"), 0, 255
 
 	if id ~= nil then
 		libError(id < 0 or id > 15, "id", "3", nil, "shine", "2")
@@ -177,17 +218,25 @@ local function LIB_shine(speed, id, tbl)
 		imin = id
 		imax = id
 
-		tbl = {[id] = tbl[1]} -- move shade values
+		-- "tbl" a table with only one index ( other table: {{r, b, g}} )
+		-- it item will be moved from first position to "id" position,
+		-- but only if this index is nil
+		if isTable then
+			tbl = {
+				[id] = (type(tbl[id]) == "table") and tbl[id] or ((type(tbl[1]) == "table") and tbl[1] or tbl)
+			}
+		end
 	end
 
-	local cur, min, max, value
 	for i = imin, imax do -- color index
 		for j = 0, 2 do -- rgb
 		
 			cur = peek(AD + i * 3 + j)
 			
-			min = type(tbl) ~= "table" and 0   or tbl[i][j]
-			max = type(tbl) ~= "table" and 255 or tbl[i][j]
+			if isTable then
+				min = tbl[i][j]
+				max = tbl[i][j]
+			end
 			
 			if speed <= 0 then
 				value = (cur + speed >= min) and cur + speed or min -- less
@@ -203,8 +252,8 @@ local function LIB_shine(speed, id, tbl)
 	end
 	
 	-- true: all colors have arrived at the minimum or maximum of shine
-	if qtt == 48 and math.floor(speed) ~= 0 then
-		return speed < 0 and -1 or 1
+	if qtt == ((id == nil) and 48 or 3) and math.floor(speed) ~= 0 then
+		return (speed < 0) and -1 or 1
 	end
 
 	return 0
