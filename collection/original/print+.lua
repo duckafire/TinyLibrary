@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.3.0
+-- VERSION: 4.3.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -71,36 +71,35 @@ local ShaBy = 1
 
 ----- X, Y, WIDTH, HEIGHT -----
 
-local function LIB_length(text, fixed, scale, smallfont, lines)
+local function LIB_length(text, fixed, scale, smallfont)
 	-- check first argument and functions to print in error message
 	local origin = {"length", "center", "pCenter", "pShadow", "pBorder", "pList"}
 	libError(type(text) ~= "string", "text", "1", nil, origin[LenBy], 1)
 	LenBy = 1
 	
 	scale = scale or 1
-	lines = lines or 1 -- quantity of "\n"
 
 	-- In Tic80 API, "print" return the width of the text used like argument (#1)
-	return print(text, 0, 136, 0, fixed, scale, smallfont), (6 * scale) * lines -- width and height
+	return print(text, 0, 136, 0, fixed, scale, smallfont), 5 * scale
 end
 
-local function LIB_center(text, x, y, fixed, scale, smallfont, lines)
+local function LIB_center(text, x, y, fixed, scale, smallfont)
 	x, y = x or 0, y or 0
 	
 	if LenBy < 2 then LenBy = 2 end
-	local width, height = LIB_length(text, fixed, scale, smallfont, lines)
+	local width, height = LIB_length(text, fixed, scale, smallfont)
 	
 	-- value approximated
-	return x - width // 2 + 1, y - height // 2 + 1
+	return x - width // 2 + 1, y - height // 2
 end
 
 
 
 ----- PRINT FUNCTIONS -----
 
-local function LIB_pCenter(text, x, y, color, fixed, scale, smallfont, lines)
+local function LIB_pCenter(text, x, y, color, fixed, scale, smallfont)
 	LenBy = 3
-	x, y = LIB_center(text, x, y, fixed, scale, smallfont, lines)
+	x, y = LIB_center(text, x, y, fixed, scale, smallfont)
 	
 	print(text, x, y, color, fixed, scale or 1, smallfont)
 end
@@ -219,9 +218,19 @@ local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, 
 	print(text, textX, textY, textColor, fixed, scale, smallfont)
 end
 
-local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, align, onCenter, effect)
+local function LIB_pList(text, X, Y, _color, space, fixed, scale, smallfont, align, onCenter, effect)
 	libError(type(text) ~= "table", "text", "1", nil, "pList", 1)
 	
+	local color = {}
+	if type(_color) == "table" then
+		libError(#_color < #text, "color", "insufficient number of indexes", "pList", 3)
+		color = _color
+	else
+		for i = 1, #text do
+			color[i] = _color
+		end
+	end
+
 	X, Y = X or 0, Y or 0
 	scale = scale or 1
 	space = space or 13 * scale
@@ -248,7 +257,8 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, alig
 		end
 		LenBy = 6
 		if onCenter then
-			X, Y = LIB_center(text[bigger], X, Y - #text, fixed, scale, smallfont, #text)
+			X = LIB_center(text[bigger], X, Y - #text, fixed, scale, smallfont)
+			Y = Y - ((#text - 1) * space * scale ) // 2
 		end
 		blen = LIB_length(text[bigger], fixed, scale, smallfont) -- Big LENgth
 	end
@@ -269,15 +279,15 @@ local function LIB_pList(text, X, Y, color, space, fixed, scale, smallfont, alig
 		
 		-- write text
 		if not effect then
-			print(tostring(text[i]), x, y, color, fixed, scale, smallfont)
+			print(tostring(text[i]), x, y, color[i], fixed, scale, smallfont)
 		
 		else
 			if effect[1] == "shadow" then
 				ShaBy = 2
-				LIB_pShadow(text[i], effect[2], x, y, color, fixed, scale, smallfont)
+				LIB_pShadow(text[i], effect[2], x, y, color[i], fixed, scale, smallfont)
 			
 			elseif effect[1] == "border" then
-				LIB_pBorder( text[i], x, y, color, effect[2], fixed, scale, effect[3], smallfont)
+				LIB_pBorder( text[i], x, y, color[i], effect[2], fixed, scale, effect[3], smallfont)
 			end
 		end
 		
