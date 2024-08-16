@@ -1,6 +1,6 @@
--- NAME:    LongBit
+-- NAME:    longBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.4.3
+-- VERSION: 3.5.0
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -35,7 +35,7 @@ local function libError(condAssert, par, msg, opt, func, id)
 	local text = {nil, func, "#"..id}
 	local full = "\n\n[longBit]"
 
-	par = par and '"'..par..'"' or ""
+	par = par and '"'..par..'" ' or ""
 	local function cat(str) text[1] = par..str end
 
 	if     msg == "1" then cat("was not specified")
@@ -49,8 +49,8 @@ local function libError(condAssert, par, msg, opt, func, id)
 
 		if i == 1 and opt ~= nil then
 			full = full.."\nTry: "
-			for j = 1, #opt - 1 do full = full.." | " end
-			fulll = full..opt[#opt] -- without '|'
+			for j = 1, #opt - 1 do full = full..opt[i].." | " end
+			full = full..opt[#opt] -- without '|'
 		end
 	end
 
@@ -66,63 +66,80 @@ local ZERO = 2000000000 -- constants
 local MAX  = 2999999999
 local LBC = {} -- LongBit-Classes
 local CID = {} -- Classes-InDex (it stores the index of spaces used in LCB)
-local GetBy = 1 -- action control
+local Origin = {"getNum", "getBool", "setNum", "setAll", "update"}
+local GetBy = 1
+local SetBy = 3
+local AllBy = 4
 
 
 
 ----- INTERNAL -----
 
-local function classToId(funcName, argID, id)
+local function classToId(class, funcName, argID)
 	for i = 1, #CID do
-		if id == LBC[CID[i]] then return CID[i] end
+		if class == LBC[CID[i]] then
+			return CID[i]
+		end
 	end
 	
 	-- if no a "class" is not returned
-	libError(nil, nil, "Invalid class: "..id, nil, funcName, argID)
+	libError(nil, nil, "Invalid class ("..class..")", nil, funcName, argID)
 end
 
-local function ckID(itemID, func, id)
-	libError(itemID < 1 or itemID > 9, "itemID", "3", nil, func, id)
-	
-	return itemID + 1 -- 1-9 -> 2-10
+local function ckSign(value, funcName, argID)
+	libError(value < 0, nil, "It is not possible store negative values", nil, funcName, argID)
+end
+
+local function ckId(id, funcName, argID, mode) -- mode: default, max255, isClass
+	id = (mode ~= 2) and id or classToId(id, funcName, argID)
+
+	libError(id < 0 or id > ((mode == 1) and 255 or 9), "Index", "3", nil, funcName, argID)
+end
+
+local function ckDf(pid, funcName, argID) -- check memory definition
+	libError(pmem(pid) < ZERO or pmem(pid) > MAX, nil, "Memory not defined or invalid", nil, funcName, argID)
+end
+
+local function ckGet(itemID, length, funcName, argID) -- check and get
+	-- 1-9 -> 2-10; sub-memory length
+	local values = {itemID + 1, itemID + 1 + (length or 1) - 1}
+
+	for i = 1, 2 do
+		libError(values[i] < 1 or values[i] > 10 - (i - 1), ((i == 1) and "index" or "length"), "3", nil, funcName, argID + 2 * (i - 1))
+	end
+
+	return values[1], values[2] -- index, length
 end
 
 
 
 ----- GET VALUE -----
 
-local function LIB_getNum(itemID, className, length)
-	local origin = {"getNum", "getBool"}
-	libError(itemID < 0 or itemID > 9, nil, "Invalid index #"..itemID..".\nTry values between 1-9", nil, origin[GetBy], 1)
+local function LIB_getNum(itemID, class, length)
+	ckId(itemID, Origin[GetBy], 1, 0)
 	
-	itemID = ckID(itemID, origin[GetBy], 1)
-	length = length or 1
-	
-	libError(length < 1 or length > 9, nil, "Invalid sub-memory scale.\nTry values between 1-9", nil, origin[GetBy], 3)
+	local pmemID = classToId(class, "getNum", 2)
+	itemID, length = ckGet(itemID, length, Origin[GetBy], 1)
 
-	local pmemID = classToId("getNum", 2, className)
-	
-	libError(#tostring(pmem(pmemID)) < 10, nil, "Sub-memory not defined", nil, origin[GetBy], 1)
 	GetBy = 1
-	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, itemID + length - 1))
+	return tonumber(string.sub(tostring(pmem(pmemID)), itemID, length))
 end
 
-local function LIB_getBool(itemID, className, equal, length)
+local function LIB_getBool(itemID, class, equal, length)
 	GetBy = 2
-	return LIB_getNum(itemID, className, length) == (equal or 1)
+	return LIB_getNum(itemID, class, length) == (equal or 1)
 end
 
 local function LIB_getClass(id)
-	libError(id < 0 or id > 255, "id", "3", nil, "getClass", 1)
+	ckId(id, "getClass", 1, 1)
 
 	return LBC[id]
 end
 
-local function LIB_getAll(className, full)
-	local pmemID = classToId("getAll", 1, className)
+local function LIB_getAll(class, full)
+	local pmemID = classToId(class, "getAll", 1)
+	--ckDf(pmemID, "getAll", 1, 2)
 
-	if pmem(pmemID) < ZERO then return 0 end
-	
 	local value = string.sub(tostring(pmem(pmemID)), 2)
 
 	if full then return value end
@@ -133,27 +150,36 @@ end
 
 ----- SET VALUE -----
 
-local function LIB_setClass(classes, init)
+local function LIB_setClass(classes, force, init)
 	init = init or 0
 
 	libError(type(classes) ~= "table", "classes", "1", nil, "setClass", 1)
-	libError(init < 0 or init > 255, nil, '"init" is invalid.\nTry values between 0-255', nil, "setClass", 1)
 	
 	local max = init + #classes - 1
-	max = max < 255 and max or 255
+	libError(max > 255, nil, "Index overflow (init + #classes - 1 > 255)", nil, "setClass", 1)
 
-	local id, addToCID = 1, true
+	local id = 1 -- used to get classes from "classes"
+	local addToCID = false -- to save classe
+	local notDef = false -- not defined
+
 	for i = init, max do
-		libError(classes[id] == "" or string.find(classes[id], " ") ~= nil, nil, "Invalid class. Do not use strings with spaces or void strings", nil, "setClass", 1)
+		libError(classes[id] == "" or string.find(classes[id], " ") ~= nil, nil, "Invalid class. Do not use void strings or strings with spaces", nil, "setClass", 1)
 		
-		LBC[i] = classes[id]
-		id = id + 1
+		notDef = (LBC[i] == nil)
 
+		if notDef or force then
+			LBC[i] = classes[id] -- save variable
+		end
+
+		id = id + 1
 		addToCID = true
-		for j = 1, #CID do
-			if CID[j] == i then
-				addToCID = false
-				break
+
+		if not notDef then -- already defined
+			for j = 1, #CID do
+				if CID[j] == i then
+					addToCID = false -- CID index already occupied
+					break
+				end
 			end
 		end
 
@@ -163,47 +189,53 @@ local function LIB_setClass(classes, init)
 	return #classes == id
 end
 
-local function LIB_setNum(newValue, itemID, className, length)
-	local pmemID  = classToId("setMem", 3, className)
-	local value   = nil
-
-	itemID = ckID(itemID, "setNum", 2) -- from 2 to next
-	length = length or 1
-
-	libError(itemID < 1 or itemID > 9, "itemID", "3",                     nil, "setNum", 2)
-	libError(itemID + length >= 10,    nil,      "'Sub-Memory' overflow", nil, "setNum", 4)
+local function LIB_setNum(newValue, itemID, class, length)
+	local values, nVal = "", 0
+	itemID, length = ckGet(itemID, length, Origin[SetBy], 2) -- from 2 to next
 
 	-- convert boolean to binary
 	if type(newValue) == "boolean" then
-		value = newValue and 1 or 0
+		value = (newValue) and 1 or 0
 	
 	-- fill "blank spaces" in newValue
 	else
 		value = tostring(newValue)
+		local dif = (length + 1) - itemID
 		
-		if length > 1 then
-			for i = 1, length do-- update "_length" times
-				value = (#value < length) and "0"..value or value
+		if dif > 1 then
+			for i = 1, dif do-- update "_length" times
+				value = (#value < dif) and "0"..value or value
 			end
 		end
+
+		nVal = tonumber(value)
+		libError(nVal > 10 ^ dif, nil, "Sub-memory OVERFLOW", nil, Origin[SetBy], 1)
 	end
-	
+
+	ckSign(nVal, Origin[SetBy], 1)
+	local pmemID = classToId(class, Origin[SetBy], 3)
+
 	-- get pmem value "fragments" to restaur it
 	local function convert(a, z)   return string.sub(tostring(pmem(pmemID)), a, z)   end
 	local back   = convert(1, itemID - 1)
-	local front  = convert(itemID + length)
+	local front  = convert(length + 1)
 	
+	SetBy = 3
 	pmem(pmemID, tonumber(back..value..front))
 end
 
-local function LIB_setAll(newValue, className, update)
-	local pmemID = classToId("setAll", 2, className)
+local function LIB_setAll(newValue, class, update, protect)
+	if not update then
+		ckSign(newValue, Origin[AllBy], 1)
+	end
+
+	local pmemID = classToId(class, Origin[AllBy], 2)
 
 	-- value to update or replace
 	if update then
 		newValue = pmem(pmemID) + newValue
 	else
-		newValue = tostring(math.abs(newValue))
+		newValue = tostring(newValue)
 		if #newValue < 9 then
 			for i = 1, 9 - #newValue do
 				newValue = "0"..newValue
@@ -214,25 +246,31 @@ local function LIB_setAll(newValue, className, update)
 
 	local status = (newValue < ZERO) and -1 or (newValue > MAX) and 1 or 0
 	
-	-- leak not allowed
-	if     status < 0 then pmem(pmemID, ZERO    ) -- underflow
-	elseif status > 0 then pmem(pmemID, MAX     ) -- overflow
-	else                   pmem(pmemID, newValue) -- sucess
+	if protected then -- "pcall" be like
+		if     status < 0 then pmem(pmemID, ZERO    ) -- underflow
+		elseif status > 0 then pmem(pmemID, MAX     ) -- overflow
+		else                   pmem(pmemID, newValue) -- sucess
+		end
+	else
+		libError(status < 0, nil, "[ UNDERFLOW ]", nil, "setAll", 1)
+		libError(status > 0, nil, "[ OVERFLOW ]",  nil, "setAll", 1)
+		pmem(pmemID, newValue)
 	end
 
+	AllBy = 4
 	return status
 end
 
 local function LIB_boot(memID, replace, init, left, empty)
 	init = init or 0
-	empty = tonumber(empty) ~= nil and empty or 0
-	local id, value = 0, ""
+	empty = (tonumber(empty) ~= nil) and empty or 0
+	local id, value, vNum = 0, "", 0
 	
 	local max = init + #memID - 1
-	libError(init < 0 or init > 255,  "init",  "3",                                      nil, "boot", 3)
-	libError(#memID > 256,            nil,     "The table specified is bigger that 256", nil, "boot", 1)
-	libError(max > 255,               nil,     "Index overflow",                         nil, "boot", 1)
-	libError(empty < 0 or empty > 9,  "empty", "3",                                      nil, "boot", 5)
+	ckId(init,  "boot", 3, 1)
+	ckId(empty, "boot", 5, 0) -- it is not a index, but it can be check with it
+	libError(#memID > 256, nil, "The table specified is bigger that 256",   nil, "boot", 1)
+	libError(max    > 255, nil, "Index overflow (init + #memID - 1 > 255)", nil, "boot", 1)
 
 	for i = init, max do
 		id = id + 1
@@ -240,76 +278,91 @@ local function LIB_boot(memID, replace, init, left, empty)
 		if pmem(i) <= ZERO or replace then
 			-- check if it is valid
 			value = memID[id]
+			vNum  = tonumber(value)
 
-			libError(type(    value) ~= "string", nil, value.." is not a string",                       nil, "boot", 1)
-			libError(tonumber(value) == nil,      nil, value.." cannot be converted to number",         nil, "boot", 1)
-			libError(tonumber(value) > 999999999, nil, value.." is too big.\nThe maximum is 999999999", nil, "boot", 1)
+			ckSign(vNum, "boot", 1)
+			libError(type(value) ~= "string", nil, value.." is not a string",               nil, "boot", 1)
+			libError(tonumber(vNum) == nil,   nil, value.." cannot be converted to number", nil, "boot", 1)
+			libError(tonumber(vNum) > MAX,    nil, value.." is too large (max: "..MAX..")", nil, "boot", 1)
 			
 			-- fill empty spaces
 			while #value < 9 do
-				if left then
-					value = empty..value
-				else
-					value = value..empty
-				end
+				value = (left) and empty..value or value..empty
 			end
 
 			-- add joker
-			value = "2"..value
+			value = tonumber("2"..value)
 		
 			-- save in persistent memory
-			pmem(i, tonumber(value))
+			pmem(i, value)
 		end
 	end
 	
-	return #memID == id
+	return (#memID == id)
 end
 
-local function LIB_update(class, values, indexes, _lock) -- lock: pmemID/class, compare, newValue
-	libError(#values ~= #indexes, nil, "The quantity of values and indexes must be equal", nil, "update", "1-2")
+local function LIB_update(...)
+	local par, qtt = {...}, 0
+	local class = par[2]
 
-	local changed = false
+	ckDf(classToId(class, "update", 2), "update", 2)
 
-	if _lock then
-		-- adjustment argument
-		local lock, cond, isStr = _lock, nil, nil
-		if type(_lock) ~= "table" then   lock = {_lock}   end
+	-- individual comparation
+	if not par[1] then
+		local values  = par[3]
+		local indexes = par[4] -- to compare
 
-		-- get value
-		isStr = (type(lock[1]) == "string")
-		if isStr then
-			cond = (LIB_getAll(lock[1]) == (lock[2] or 0))
-		else
-			libError(lock[1] < 0 or lock[1] > 255, "lock[1]", "3", nil, "update", 4)
-			cond = (pmem(lock[1]) == (lock[2] or 0))
+		libError(#values ~= #indexes, nil, "The quantity of values and indexes must be equal", nil, "update", "3-4")
+
+		SetBy = 5
+		local err, tVal = "", 0
+		for i = 1, #indexes do
+			err = "values["..i.."] is not a "
+			libError(type(values[i]) ~= "string", nil, err.."string", nil, "update", 1)
+
+			tVal = tonumber(values[i])
+			libError(tVal == nil,  nil, err.."number", nil, "update", 1)
+
+			LIB_setNum(tVal, indexes[i], class, #tostring(values[i]))
+			qtt = qtt + 1
 		end
 
-		-- change already applied
-		if cond then
-			if isStr then
-				LIB_setAll(lock[3] or 1, lock[1])
-			else
-				pmem(lock[1], lock[3] or 1)
-			end
-		else
-			return false
-		end
+		return qtt -- quantity of sub-memories changed
 	end
 
-	for i = 1, 9 do
-		if i == indexes[i] then
-			LIB_setNum(values[i], indexes[i], class, #tostring(values[i]))
-			changed = true
-		end
+	-- total compation (s: single)
+	local sValue = tonumber(par[3] or 0)
+	local sIndex = par[4] or 1 -- to compare
+
+	-- adjustment argument
+	local cond, isClass = nil, (type(class) == "string") -- class: id or str
+
+	-- get value
+	if isClass then
+		cond = (LIB_getAll(class) ~= sIndex)
+	else
+		ckId(class, "update", 2, 2)
+		cond = (pmem(class) ~= sIndex)
 	end
 
-	return changed
+	-- change already applied
+	AllBy = 5
+	if cond then
+		if isClass then
+			LIB_setAll(sValue, class)
+		else
+			pmem(class, sValue)
+		end
+		qtt = 1
+	end
+
+	return (qtt == 1)
 end
 
 local function LIB_clear(Type, absolute, init, max)
 	-- check if "_type" is valid
 	local isValid = false
-	local allTypes = {"all", "memory", "class", "noneMemory", "noneClass"}
+	local allTypes = {"all", "memory", "class", "nonMemory", "nonClass"}
 
 	for i = 1, #allTypes do
 		if Type == allTypes[i] then
@@ -318,62 +371,79 @@ local function LIB_clear(Type, absolute, init, max)
 		end
 	end
 
-	libError(not isValid, Type, allTypes, nil, "clear", 1)
+	libError(not isValid, "type", "3", allTypes, "clear", 1)
 
 	init = init or 0
 	max  = max  or 255
 
-	libError(init < 0,   "init", "3", "clear", 3)
-	libError(max  > 255, "max",  "3", "clear", 4)
+	--commited
+	ckId(init, "clear", 3, 0) -- init < 0
+	ckId(max,  "clear", 4, 1) -- max > 255
 
 	local changed = false
+	local memZero = (absolute) and 0 or ZERO
 
 	if Type == "memory" or Type == "all" then
 		for i = init, max do
-			changed = true
 			pmem(i, memZero)
+			
+			changed = true
 		end
 	end
 	
-	if Type == "class" or Type == "all" then
-		changed = true
-		LBC = {}
+	if Type == "class"  or Type == "all" then
+		for i = #CID, 1, -1 do
+			if CID[i] >= init and CID[i] <= max then
+				LBC[CID[i]] = nil
+				CID[i] = nil
+
+				changed = true
+			end
+		end
+
+		return changed
 	end
 	
 	-- clear memories without class
-	if Type == "noneClass" then
+	if Type == "nonClass" then
 		for i = init, max do
 			if LBC[i] == nil then
+				pmem(i, memZero)
+				
 				changed = true
-				pmem(i, (absolute) and 0 or ZERO)
 			end
 		end
+
+		return changed
 	end
 
 	-- clear classes without memory
-	if Type == "noneMemory" then
-		for i = init, max do
-			if pmem(i) < ZERO or pmem(i) > MAX then
+	if Type == "nonMemory" then
+		local id = 0
+
+		for i = #CID, 1, -1 do
+			id = CID[i]
+
+			if id >= init and id <= max and (pmem(id) < ZERO or pmem(id) > MAX) then
+				LBC[id] = nil
+				CID[i] = nil
+				
 				changed = true
-				LBC[i] = nil
 			end
 		end
-	end
 
-	return changed
+		return changed
+	end
 end
 
 
 
 ----- SWAP -----
 
-local function LIB_swapClass(newName, id)
-	libError(type(newName) ~= "string", "newValue", "is not a string", nil, "swapClass", 1)
-	libError(id < 0 or id > 255, "id", "3", nil, "swapClass", 2)
+local function LIB_swapClass(newName, oldName)
+	local function err(ident, name, id) libError(type(ident) ~= "string", name, "3", nil, "swapClass", id) end
+	err(newName, "newName", 1)
+	err(oldName, "oldName", 2)
 
-	local wasDefined = LBC[id]
-	LBC[id] = newName
-
-	if wasDefined then return true end
-	return false
+	LBC[classToId(oldName, "swapClass", 2)] = newName
 end
