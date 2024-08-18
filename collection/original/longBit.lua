@@ -1,6 +1,6 @@
 -- NAME:    longBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.5.0
+-- VERSION: 3.5.1
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -101,11 +101,14 @@ local function ckDf(pid, funcName, argID) -- check memory definition
 end
 
 local function ckGet(itemID, length, funcName, argID) -- check and get
+	length = length or 1
+	libError(length <= 0, "length", "3", nil, funcName, argID + 2)
+
 	-- 1-9 -> 2-10; sub-memory length
-	local values = {itemID + 1, itemID + 1 + (length or 1) - 1}
+	local values = {itemID + 1, itemID + 1 + length - 1}
 
 	for i = 1, 2 do
-		libError(values[i] < 1 or values[i] > 10 - (i - 1), ((i == 1) and "index" or "length"), "3", nil, funcName, argID + 2 * (i - 1))
+		libError(values[i] < 2 - 1 * (i - 1) or values[i] > 10, ((i == 1) and "index" or "length"), "3", nil, funcName, argID + 2 * (i - 1))
 	end
 
 	return values[1], values[2] -- index, length
@@ -301,62 +304,32 @@ local function LIB_boot(memID, replace, init, left, empty)
 	return (#memID == id)
 end
 
-local function LIB_update(...)
-	local par, qtt = {...}, 0
-	local class = par[2]
-
+local function LIB_update(class, values, indexes)
 	ckDf(classToId(class, "update", 2), "update", 2)
 
-	-- individual comparation
-	if not par[1] then
-		local values  = par[3]
-		local indexes = par[4] -- to compare
+	-- parameters and texts
+	local parTxt = {#values, #indexes, '"values"', '"indexes"'}
+	for i = 1, 2 do libError(parTxt[i] < 1 or parTxt[i] > 9, parTxt[i + 2], "invalid quantity of indexes", {"(min: 1", "max: 9)"}, "update", 1 + i) end -- 2 or 3
 
-		libError(#values ~= #indexes, nil, "The quantity of values and indexes must be equal", nil, "update", "3-4")
+	libError(#values ~= #indexes, nil, "The quantity of values and indexes must be equal", nil, "update", "2-3")
 
-		SetBy = 5
-		local err, tVal = "", 0
-		for i = 1, #indexes do
-			err = "values["..i.."] is not a "
-			libError(type(values[i]) ~= "string", nil, err.."string", nil, "update", 1)
+	GetBy, SetBy = 5, 5
+	local err, nVal, qtt = "", 0, 0
 
-			tVal = tonumber(values[i])
-			libError(tVal == nil,  nil, err.."number", nil, "update", 1)
+	for i = 1, #indexes do
+		err  = "values["..i.."] is not a "
+		nVal = tonumber(values[i])
 
-			LIB_setNum(tVal, indexes[i], class, #tostring(values[i]))
+		libError(type(values[i]) ~= "string", nil, err.."string", nil, "update", 1)
+		libError(nVal == nil,                 nil, err.."number", nil, "update", 1)
+
+		if LIB_getNum(indexes[i], class, #values[i]) ~= nVal then
+			LIB_setNum(nVal, indexes[i], class, #values[i])
 			qtt = qtt + 1
 		end
-
-		return qtt -- quantity of sub-memories changed
 	end
 
-	-- total compation (s: single)
-	local sValue = tonumber(par[3] or 0)
-	local sIndex = par[4] or 1 -- to compare
-
-	-- adjustment argument
-	local cond, isClass = nil, (type(class) == "string") -- class: id or str
-
-	-- get value
-	if isClass then
-		cond = (LIB_getAll(class) ~= sIndex)
-	else
-		ckId(class, "update", 2, 2)
-		cond = (pmem(class) ~= sIndex)
-	end
-
-	-- change already applied
-	AllBy = 5
-	if cond then
-		if isClass then
-			LIB_setAll(sValue, class)
-		else
-			pmem(class, sValue)
-		end
-		qtt = 1
-	end
-
-	return (qtt == 1)
+	return qtt -- quantity of sub-memories changed
 end
 
 local function LIB_clear(Type, absolute, init, max)
