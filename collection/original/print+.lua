@@ -1,6 +1,6 @@
 -- NAME:    print+
 -- AUTHOR:  DuckAfire
--- VERSION: 4.3.1
+-- VERSION: 4.3.2
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -23,74 +23,33 @@
 
 
 
------ DEFAULT -----
+----- HEAD -----
 
-local function libError(condAssert, par, msg, opt, func, id)
-	-- "assert" be like
-	if condAssert ~= nil then
-		if not condAssert then return end
-	end
-	
-	local default = {"Error", "Function", "Index"}
-	local text = {nil, func, "#"..id}
-	local full = "\n\n[print+]"
+local function libError(a,b,c,d,e,f)if a~=nil then if not a then return end end local g={"Error","Function","Index"}local h={nil,e,"#"..f}local i="\n\n[LIB]"b=b and'"'..b..'" ' or"" local function j(k)h[1]=b..k end if c=="1" then j("was not specified")elseif c=="2" then j("was not defined")elseif c=="3" then j("is invalid")else j(c)end for l=1,3 do i=i.."\n"..g[l]..": "..h[l].."." if l==1 and d~=nil then i=i.."\nTry: " for m=1,#d-1 do i=i..d[l].." | " end i=i..d[#d] end end trace("\n>\n>\n>")error(i.."\n")end
 
-	par = (par) and '"'..par..'" ' or ""
-	local function cat(str) text[1] = par..str end
-
-	if     msg == "1" then cat("was not specified")
-	elseif msg == "2" then cat("was not defined")
-	elseif msg == "3" then cat("is invalid")
-	else                   cat(msg)
-	end
-
-	for i = 1, 3 do
-		full = full.."\n"..default[i]..": "..text[i].."."
-
-		if i == 1 and opt ~= nil then
-			full = full.."\nTry: "
-			for j = 1, #opt - 1 do full = full..opt[i].." | " end
-			full = full..opt[#opt] -- without '|'
-		end
-	end
-
-	trace("\n>\n>\n>")
-	error(full.."\n")
-end
-
-
-
------ ACTION CONTROLS -----
-
--- LENght called BY itself, center or pCenter | pSHAdow called BY LIB_pList (only)
-local LenBy = 1
-local ShaBy = 1
---local LenBy, ShaBy = 1, 1
+local LenBy = 1 -- LENght BY
+local ShaBy = 1 -- pSHAdow BY
 
 
 
 ----- X, Y, WIDTH, HEIGHT -----
 
 local function LIB_length(text, fixed, scale, smallfont)
-	-- check first argument and functions to print in error message
+	-- function (that use "length") names to error messages
 	local origin = {"length", "center", "pCenter", "pShadow", "pBorder", "pList"}
-	libError(type(text) ~= "string", "text", "1", nil, origin[LenBy], 1)
-	LenBy = 1
-	
-	scale = scale or 1
 
-	-- In Tic80 API, "print" return the width of the text used like argument (#1)
-	return print(text, 0, 136, 0, fixed, scale, smallfont), 5 * scale
+	LenBy = 1
+	scale = scale or 1
+	return print(tostring(text), 0, 136, 0, fixed, scale, smallfont), 5 * scale
 end
 
 local function LIB_center(text, x, y, fixed, scale, smallfont)
-	x, y = x or 0, y or 0
-	
 	if LenBy < 2 then LenBy = 2 end
+
 	local width, height = LIB_length(text, fixed, scale, smallfont)
 	
 	-- value approximated
-	return x - width // 2 + 1, y - height // 2
+	return (x or 0) - width // 2 + 1, (y or 0) - height // 2
 end
 
 
@@ -104,22 +63,25 @@ local function LIB_pCenter(text, x, y, color, fixed, scale, smallfont)
 	print(text, x, y, color, fixed, scale or 1, smallfont)
 end
 
-local function LIB_pShadow(text, _shadow, textX, textY, textColor, fixed, scale, smallfont, onCenter) -- the last is a internal parameter
+local function LIB_pShadow(text, _shadow, textX, textY, textColor, fixed, scale, smallfont, onCenter)
 	local origin = (ShaBy == 1) and "pShadow" or "pList"
 	local shadow = {}
 	
 	if type(_shadow) == "number" then
 		shadow[1] = _shadow < 0 and 0 or _shadow > 15 and 15 or math.abs(_shadow)
-		shadow[1] = shadow[1].."-1"
+		shadow[1] = shadow[1].."-1" -- default direction
 
 	elseif type(_shadow) == "table" then
-		for i = 1, #_shadow do -- "break" link (pointer)
+		-- copy "_shadow" to "shadow"
+		for i = 1, #_shadow do
 			shadow[i] = _shadow[i]
 		end
 	
 	else
 		libError(nil, "shadow", "is not a number or table", nil, origin, 5)
 	end
+
+	libError(shadow[1] == nil, "shadow", "values not defined", nil, origin, 1)
 
 	if onCenter then
 		LenBy = 4
@@ -128,41 +90,42 @@ local function LIB_pShadow(text, _shadow, textX, textY, textColor, fixed, scale,
 
 	scale = scale or 1 -- default
 	
-	local hyphen, x, y = "", 0, 0 -- '-'
+	local hyphen, x, y = 0, 0, 0
 	local color, direction, distance = {}, {}, {}
 	local all = {color, direction, distance, "color", "direction", "distance"}
-	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}} -- adjustments to posititon
-	
-	libError(shadow[1] == nil, "shadow", "values not defined", nil, origin, 1)
+	local less = {[0] = {0, -1}, {0, 1}, {-1, 0}, {1, 0}} -- adjustments to posititon (top, below, left, rigth)
 
 	-- load all "shadow(s)"
 	for i = 1, ((#shadow < 4) and #shadow or 4) do
 
-		-- obtain: direction, color and distance
+		-- get: direction, color and distance
 		for j = 1, 2 do
-			-- get values division ('-')
-			hyphen = string.find(shadow[i], "-")
-			if #shadow[i] == 1 or tonumber(shadow[i]) ~= nil then hyphen = 0 end -- color-direction
+			-- get positon of the divisor ('-')
+			hyphen = string.find(shadow[i], '-')
+
+			-- one value remains and it is a number
+			if #shadow[i] == 1 and tonumber(shadow[i]) ~= nil then hyphen = 0 end
+			
 			libError(hyphen == nil, nil, "Hyphen not specified. In index #"..i..' of the table "shadow"', nil, origin, 1)
 			
 			-- splits the values present in strings
 			if j == 1 then
-				color[i]  = string.sub(shadow[i], 1, hyphen - 1)
-				shadow[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
+				color[i]  = string.sub(shadow[i], 1, hyphen - 1)          -- before '-'
+				shadow[i] = string.sub(shadow[i], hyphen + 1, #shadow[i]) -- after '-'
 			
 			else
-				direction[i] = string.sub(shadow[i], 1, hyphen - 1)
+				direction[i] = string.sub(shadow[i], 1, hyphen - 1) -- before '-'
 
 				if hyphen == 0 then
 					distance[i] = scale -- default
 				else
-					distance[i] = string.sub(shadow[i], hyphen + 1, #shadow[i])
+					distance[i] = string.sub(shadow[i], hyphen + 1, #shadow[i]) -- after '-'
 				end
 				
 			end
 
-			-- convert to number
-			for l = 1, 3 do
+			-- convert characters getted to number
+			for l = 1, 3 do -- color, direction, distance
 				if all[l][i] ~= nil then
 					all[l][i] = tonumber(all[l][i])
 				end
@@ -172,7 +135,6 @@ local function LIB_pShadow(text, _shadow, textX, textY, textColor, fixed, scale,
 		
 		-- check if the values getted are valid
 		for j = 1, 3 do
-			-- all[1][3] == direction[3]
 			libError(type(tonumber(all[j][i])) ~= "number", nil, "The element "..all[j + 3]..' is NaN. In index #'..i..' of the table "shadow".', nil, origin, 1)
 		end
 		
@@ -193,7 +155,7 @@ local function LIB_pShadow(text, _shadow, textX, textY, textColor, fixed, scale,
 end
 
 local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, distance, smallfont, onCenter)
-	-- position and adjustment for them
+	-- positions and adjustment for them
 	local x, y = 0, 0
 	local less = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
 	
@@ -202,7 +164,6 @@ local function LIB_pBorder(text, textX, textY, textColor, bColor, fixed, scale, 
 		textX, textY = LIB_center(text, textX, textY, fixed, scale, smallfont)
 	end
 
-	-- obtain values (specified or default)
 	scale    = scale    or 1
 	bcolor   = bColor   or 0
 	distance = distance or scale
@@ -221,11 +182,12 @@ end
 local function LIB_pList(text, X, Y, _color, space, fixed, scale, smallfont, align, onCenter, effect)
 	libError(type(text) ~= "table", "text", "1", nil, "pList", 1)
 	
+	-- color: (1) one universal OR (2) one for each item
 	local color = {}
-	if type(_color) == "table" then
+	if type(_color) == "table" then -- 2
 		libError(#_color < #text, "color", "insufficient number of indexes", "pList", 3)
 		color = _color
-	else
+	else -- 1
 		for i = 1, #text do
 			color[i] = _color
 		end
@@ -236,31 +198,38 @@ local function LIB_pList(text, X, Y, _color, space, fixed, scale, smallfont, ali
 	space = space or 13 * scale
 	align = align or -1
 	
-	-- check values from "effect"
+	-- border or shadow
 	if effect then
-		libError(type(effect) ~= "table", "effect", "1", nil, "pList", 10)
-		libError(effect[1] ~= "shadow" and effect[1] ~= "border", "effect[1]", "3", {"shadow", "border"}, "pList", 10)
+		libError(type(effect) ~= "table", "effect", "3", nil, "pList", 10)
+		libError(effect[1] ~= "shadow" and effect[1] ~= "border", "effect[1]", "3", {"shadow", "border"}, "pList", 10) -- e.g.: {"shadow", ...}
 		
 		if     effect[1] == "shadow" then libError(type(effect[2]) ~= "table" and type(effect[2]) ~= "number",  "effect[2]", "is not a table or number", nil, "pList", 10)
-		elseif effect[1] == "border"  then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN",         nil, "pList", 10) -- #3 is optional (distance)
+		elseif effect[1] == "border" then libError(type(effect[2]) ~= "number", "effect[2]", "is NaN", nil, "pList", 10) -- #3 is optional (distance)
 		end
 	end
 	
 	-- adjustment axis
 	local blen = 0 -- used only if 'align ~= -1'
+	
 	if onCenter or align ~= -1 then
-		local bigger = 0
+		-- get item with the bigger width
+		local width, bigger = 0, 0
+
 		for i = 1, #text do
-			if bigger < #text[i] then
-				bigger = i
+			if width < #text[i] then
+				width  = #text[i]
+				bigger = text[i]
 			end
 		end
+
 		LenBy = 6
 		if onCenter then
-			X = LIB_center(text[bigger], X, Y - #text, fixed, scale, smallfont)
+			X = LIB_center(bigger, X, Y - #text, fixed, scale, smallfont)
 			Y = Y - ((#text - 1) * space * scale ) // 2
 		end
-		blen = LIB_length(text[bigger], fixed, scale, smallfont) -- Big LENgth
+		
+		-- Bigger LENgth: width of the bigID item
+		blen = LIB_length(bigger, fixed, scale, smallfont)
 	end
 
 	local x, y = 0, 0
@@ -277,7 +246,7 @@ local function LIB_pList(text, X, Y, _color, space, fixed, scale, smallfont, ali
 			end
 		end
 		
-		-- write text
+		-- draw
 		if not effect then
 			print(tostring(text[i]), x, y, color[i], fixed, scale, smallfont)
 		
@@ -302,7 +271,7 @@ end
 local function LIB_title(sprites, X, Y, chromaKey, space, scale, width, height, _flip, _rotate, alignX, alignY, vertical, dimw, dimh)
 	libError(type(strites) == "table", '"sprites"', "1", nil, "title", 1)
 
-	-- flip and rotate
+	-- flip and rotate (for all or for each)
 	local flip, rotate, value = {}, {}, 0
 	
 	if type(_flip) ~= "table" then
@@ -319,6 +288,7 @@ local function LIB_title(sprites, X, Y, chromaKey, space, scale, width, height, 
 		rotate = _rotate
 	end
 	
+	-- check flip and rotate quantity
 	local function err(tbl, stbl, id) libError(#sprites > #tbl, stbl, "has a insuficient quatity of indexes", "title", id) end
 	err(flip,   "flip",    9)
 	err(rotate, "rotate", 10)
@@ -326,15 +296,15 @@ local function LIB_title(sprites, X, Y, chromaKey, space, scale, width, height, 
 	-- chroma key
 	local chKey = nil -- table to store the chromaKey colors
 	
-	if     type(chromaKey) == "number" then
+	if     type(chromaKey) == "number" then -- one for all
 		chKey = {}
 		for i = 1, #sprites do chKey[i] = chromaKey end -- one index to all index in table
 	
-	elseif type(chromaKey) == "table"  then
+	elseif type(chromaKey) == "table"  then -- one for each
 		err(chromaKey, "chromaKey", 4)
 		chKey = chromaKey
 
-	else
+	else -- not specified
 		chKey = {}
 		for i = 1, #sprites do chKey[i] = 0 end -- default value (0)
 

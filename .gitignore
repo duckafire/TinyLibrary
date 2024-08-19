@@ -1,7 +1,7 @@
 collection/original/head.txt
 collection/compacted/*.lua
 collection/original/*.limfile
-collection/original/makefile
+collection/original/*.sh
 toFuture.txt
 wiki
 docs

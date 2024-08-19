@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 4.0.1
+-- VERSION: 4.0.2
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -23,42 +23,9 @@
 
 
 
------ DEFAULT -----
+----- HEAD -----
 
-local function libError(condAssert, par, msg, opt, func, id)
-	-- "assert" be like
-	if condAssert ~= nil then
-		if not condAssert then return end
-	end
-	
-	local default = {"Error", "Function", "Index"}
-	local text = {nil, func, "#"..id}
-	local full = "\n\n[coli2DA]"
-
-	par = par and '"'..par..'" ' or ""
-	local function cat(str) text[1] = par..str end
-
-	if     msg == "1" then cat("was not specified")
-	elseif msg == "2" then cat("was not defined")
-	elseif msg == "3" then cat("is invalid")
-	else                   cat(msg)
-	end
-
-	for i = 1, 3 do
-		full = full.."\n"..default[i]..": "..text[i].."."
-
-		if i == 1 and opt ~= nil then
-			full = full.."\nTry: "
-			for j = 1, #opt - 1 do full = full..opt[i].." | " end
-			full = full..opt[#opt] -- without '|'
-		end
-	end
-
-	trace("\n>\n>\n>")
-	error(full.."\n")
-end
-
------ VARIABLES AND TABLES -----
+local function libError(a,b,c,d,e,f)if a~=nil then if not a then return end end local g={"Error","Function","Index"}local h={nil,e,"#"..f}local i="\n\n[LIB]"b=b and'"'..b..'" ' or"" local function j(k)h[1]=b..k end if c=="1" then j("was not specified")elseif c=="2" then j("was not defined")elseif c=="3" then j("is invalid")else j(c)end for l=1,3 do i=i.."\n"..g[l]..": "..h[l].."." if l==1 and d~=nil then i=i.."\nTry: " for m=1,#d-1 do i=i..d[l].." | " end i=i..d[#d] end end trace("\n>\n>\n>")error(i.."\n")end
 
 local RE = "rect"
 local CI = "circ"
@@ -66,14 +33,12 @@ local SI = "simp"
 local W  = "width"
 local H  = "height"
 local R  = "radius"
-local ByBd  = 1
-local OrgBd = {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"}
--- local RE, CI, SI, W, H, R = "rect", "circ", "simp", "width", "height", "radius" -- constants
--- local ByBd, OrgBd = 1, {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"} -- to errors in body
+local ByBd  = 1 -- BY newBoDy
+local OrgBd = {"newBody", "distance", "mapAlign", "tile", "tileCross", "rectangle", "circle", "shapesMix", "impactPixel"} -- origin of the body: to error messages
 
 
 
------ HEAD OF LIBRARY -----
+----- "CORE" -----
 
 local function LIB_newBody(Type, x, y, width_radius, height)
 	local new = nil
@@ -91,16 +56,17 @@ local function LIB_newBody(Type, x, y, width_radius, height)
 	return new
 end
 
-local function ckbd(_bodies, types, id) -- internal function
+local function ckbd(_bodies, types, id) -- ChecK BoDy(ies)
 	ByBd = id
 	
 	-- break adress link
 	local bodies, nodes, length
 	
 	bodies = {}
-	nodes  = {"x", "y", "width", "height"} -- "only" RECT and SIMP
+	nodes  = {"x", "y", "width", "height"}
 	length = {[RE] = 4, [CI] = 3, [SI] = 2}
 
+	-- copy "_bodies" content to "bodies"
 	for i = 1, #_bodies do
 		bodies[i] = {}
 		for j = 1, length[types[i]] do
@@ -126,7 +92,7 @@ local function ckbd(_bodies, types, id) -- internal function
 	end
 	
 	ByBd = 1
-	return table.unpack(new)
+	return table.unpack(new) -- x2 new tables (instead x2 tables address)
 end
 
 
@@ -136,13 +102,13 @@ end
 local function LIB_distance(objA, objB)
 	objA, objB = ckbd({objA, objB}, {SI, SI}, 2)
 
-	return math.sqrt((objA.x - objB.x) ^ 2 + (objA.y - objB.y) ^ 2)
+	return math.sqrt((objA.x - objB.x) ^ 2 + (objA.y - objB.y) ^ 2) -- euclidean distance
 end
 
 local function LIB_mapAlign(obj, onCenter)
 	obj = ckbd({obj}, {(onCenter) and RE or SI}, 3)
 	
-	if onCenter then -- aproximmated
+	if onCenter then -- aproximmate center
 		obj[W] = obj[W] or 8
 		obj[H] = obj[H] or 8
 		obj.x  = obj.x + obj[W] // 2
@@ -165,6 +131,7 @@ local function LIB_tile(obj, Type, flag, mapX, mapY)
 	local x1, y1, x2, y2
 	local w, h = obj[W], obj[H]
 	
+	-- vertexes
 	if     Type == "top"   then x1, y1, x2, y2 =  0, -1,  w - 1, -1
 	elseif Type == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
 	elseif Type == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
@@ -187,9 +154,7 @@ local function LIB_tileCross(obj, associative, flag, mapX, mapY)
 	
 	local values = {}
 	local tag = {"top", "below", "left", "right"}
-	for i = 0, 3 do
-		values[i] = LIB_tile(obj, tag[i + 1], ftbl[i + 1], mapX, mapY)
-	end
+	for i = 1, 4 do values[i - 1] = LIB_tile(obj, tag[i], ftbl[i], mapX, mapY) end
 	
 	return (associative) and {top = values[0], below = values[1], left = values[2], right = values[3]} or values
 end
@@ -199,7 +164,7 @@ local function LIB_box360(sx, sy, obj, flag, adjstX, adjstY)
 	
 	local topBelow  = sy and ((sy < 0 and sides[0]) or (sy > 0 and sides[1])) or false
 	local leftRight = sx and ((sx < 0 and sides[2]) or (sx > 0 and sides[3])) or false
-		
+	
 	return topBelow or leftRight
 end
 
@@ -209,8 +174,8 @@ end
 
 local function LIB_rectangle(RectA, RectB)
 	local rects, nodes = {RectA, RectB}, {W, H}
-	for i = 1, 2 do
-		for j = 3, 4 do
+	for i = 1, 2 do -- in x2 objects
+		for j = 3, 4 do -- width and height
 			if not rects[i][j] and not rects[i][nodes[j]] then
 				rects[i][j] = 1
 			end
@@ -223,7 +188,7 @@ local function LIB_rectangle(RectA, RectB)
 	       math.max(rects[1].y, rects[2].y) < math.min(rects[1].y + rects[1][H], rects[2].y + rects[2][H])
 end
 
-local function LIB_circle(CircA, CircB)-- two circ bodies; boolean
+local function LIB_circle(CircA, CircB)
 	local circs = {CircA, CircB}
 	for i = 1, 2 do
 		if not circs[i][3] and not circs[i][R] then
@@ -232,29 +197,32 @@ local function LIB_circle(CircA, CircB)-- two circ bodies; boolean
 	end
 
 	circs[1], circs[2] = ckbd({circs[1], circs[2]}, {CI, CI}, 7)
-	return (circs[1].x - circs[2].x) ^ 2 + (circs[1].y - circs[2].y) ^ 2 <= (circs[1][R] + circs[2][R]) ^ 2
+	return (circs[1].x - circs[2].x) ^ 2 + (circs[1].y - circs[2].y) ^ 2 <= (circs[1][R] + circs[2][R]) ^ 2 -- version of the euclidean distance
 end
 
-local function LIB_shapesMix(Circ, Rect)-- circ and rect object
+local function LIB_shapesMix(Circ, Rect)
 	Circ, Rect = ckbd({Circ, Rect}, {CI, RE}, 8)
 
-	-- circle center with rectangle; approximated rectangle center with circle
+	-- (circle -> point) X rectangle | (rectangle -> point) X circle
 	if LIB_rectangle({Circ.x, Circ.y}, Rect) or LIB_circle({Rect.x + Rect[W] // 2, Rect.y + Rect[H] // 2}, Circ) then return true end
 
-	-- create a square inside circle
+	-- (circle -> square) X rectangle
 	local widHei = Circ[R] * math.sqrt(2)
 	if LIB_rectangle(Rect, {1 + Circ.x - widHei / 2, 1 + Circ.y - widHei / 2, widHei, widHei}) then return true end
 
-	-- distance between vertexes and circle center
-	local distID, distance = 1, {
+	-- distance between rectangle vertexes and circle center
+	local distID   = 1
+	local distance = {
 		LIB_distance({Circ.x, Circ.y}, {Rect.x,           Rect.y          }), -- top-left
 		LIB_distance({Circ.x, Circ.y}, {Rect.x + Rect[W], Rect.y          }), -- top-right
 		LIB_distance({Circ.x, Circ.y}, {Rect.x,           Rect.y + Rect[H]}), -- below-left
 		LIB_distance({Circ.x, Circ.y}, {Rect.x + Rect[W], Rect.y + Rect[H]}), -- below-right
 	}
 	
-	-- get the vertex closest object of the circle center
-	local minor, order = {distance[1], distance[2]}, {{3, 4}, {1, 3}, {2, 4}}
+	-- get the vertex closest of the circle center
+	local minor = {distance[1], distance[2]} -- top by default
+	local order = {{3, 4}, {1, 3}, {2, 4}}   -- bottom, left, right
+
 	for i = 1, 3 do
 		if distance[order[i][1]] < minor[1] or distance[order[i][2]] < minor[2] then
 			distID = i + 1
@@ -274,6 +242,7 @@ local function LIB_shapesMix(Circ, Rect)-- circ and rect object
 	-- get and update the postions
 	local init, final = lines[distID][1], lines[distID][2]
 
+	-- check collision with the circle, pixel by pixel, in the side choosed
 	while true do
 		if LIB_circle({init[1], init[2]}, Circ)        then return true  end -- point of collision
 		if init[1] == final[1] and init[2] == final[2] then return false end -- end of loop
@@ -287,7 +256,7 @@ end
 
 ----- CURSOR / TOUCH -----
 
-local function LIB_touch(initX, initY, finalX, finalY, dimensions)-- cursor dimensions
+local function LIB_touch(initX, initY, finalX, finalY, dimensions)
 	local cursor = {}
 	cursor.x, cursor.y = mouse()
 	
@@ -308,16 +277,21 @@ local function LIB_impactPixel(Type, mixA, mixB, force)
 
 	mixA, mixB = ckbd({mixA, mixB}, {Type, Type}, 9)
 
+	-- rectangle X rectangle
 	if Type == RE then
+		-- check if they are colliding or it is a forced call
 		if not force and not LIB_rectangle(mixA, mixB) then return nil, nil end
 
+		-- convert rectangles to circles
 		local newMixA = {x = mixA.x + mixA[W] / 2, y = mixA.y + mixA[H] / 2, [R] = (mixA[W] + mixA[H]) / 2}
 		local newMixB = {x = mixB.x + mixB[W] / 2, y = mixB.y + mixB[H] / 2, [R] = (mixB[W] + mixB[H]) / 2}
 
 		return LIB_impactPixel(CI, newMixA, newMixB, true)
 	end
 
+	-- circle X circle
 	if Type == CI then
+		-- check if they are colliding or it is a forced call
 		if not force and not LIB_circle(mixA, mixB) then return nil, nil end
 
 		local x = (mixA.x * mixB[R]) + (mixB.x * mixA[R])
@@ -325,6 +299,5 @@ local function LIB_impactPixel(Type, mixA, mixB, force)
 		local totalRadius = (mixA[R] + mixB[R])
 
 		return x / totalRadius, y / totalRadius
-		
 	end
 end
