@@ -1,6 +1,6 @@
 -- NAME:    coli2DA
 -- AUTHOR:  DuckAfire
--- VERSION: 4.0.2
+-- VERSION: 4.0.3
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -132,11 +132,11 @@ local function LIB_tile(obj, Type, flag, mapX, mapY)
 	local w, h = obj[W], obj[H]
 	
 	-- vertexes
-	if     Type == "top"   then x1, y1, x2, y2 =  0, -1,  w - 1, -1
-	elseif Type == "below" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
-	elseif Type == "left"  then x1, y1, x2, y2 = -1,  0, -1,      h - 1
-	elseif Type == "right" then x1, y1, x2, y2 =  w,  0,  w,      h - 1
-	else libError(nil, "type", "3", {"top", "below", "left", "right"}, "tile", "(last)") end
+	if     Type == "top"    then x1, y1, x2, y2 =  0, -1,  w - 1, -1
+	elseif Type == "bottom" then x1, y1, x2, y2 =  0,  h,  w - 1,  h
+	elseif Type == "left"   then x1, y1, x2, y2 = -1,  0, -1,      h - 1
+	elseif Type == "right"  then x1, y1, x2, y2 =  w,  0,  w,      h - 1
+	else libError(nil, "type", "3", {"top", "bottom", "left", "right"}, "tile", "(last)") end
 	
 	return fget(mget((obj.x + x1) // 8 + mapX, (obj.y + y1) // 8 + mapY), flag) and
 	       fget(mget((obj.x + x2) // 8 + mapX, (obj.y + y2) // 8 + mapY), flag)
@@ -153,10 +153,10 @@ local function LIB_tileCross(obj, associative, flag, mapX, mapY)
 	end
 	
 	local values = {}
-	local tag = {"top", "below", "left", "right"}
+	local tag = {"top", "bottom", "left", "right"}
 	for i = 1, 4 do values[i - 1] = LIB_tile(obj, tag[i], ftbl[i], mapX, mapY) end
 	
-	return (associative) and {top = values[0], below = values[1], left = values[2], right = values[3]} or values
+	return (associative) and {top = values[0], bottom = values[1], left = values[2], right = values[3]} or values
 end
 
 local function LIB_box360(sx, sy, obj, flag, adjstX, adjstY)
@@ -215,8 +215,8 @@ local function LIB_shapesMix(Circ, Rect)
 	local distance = {
 		LIB_distance({Circ.x, Circ.y}, {Rect.x,           Rect.y          }), -- top-left
 		LIB_distance({Circ.x, Circ.y}, {Rect.x + Rect[W], Rect.y          }), -- top-right
-		LIB_distance({Circ.x, Circ.y}, {Rect.x,           Rect.y + Rect[H]}), -- below-left
-		LIB_distance({Circ.x, Circ.y}, {Rect.x + Rect[W], Rect.y + Rect[H]}), -- below-right
+		LIB_distance({Circ.x, Circ.y}, {Rect.x,           Rect.y + Rect[H]}), -- bottom-left
+		LIB_distance({Circ.x, Circ.y}, {Rect.x + Rect[W], Rect.y + Rect[H]}), -- bottom-right
 	}
 	
 	-- get the vertex closest of the circle center
@@ -234,7 +234,7 @@ local function LIB_shapesMix(Circ, Rect)
 	-- sides that will be loaded
 	local lines = {
 		{{Rect.x,           Rect.y},           {Rect.x + Rect[W], Rect.y          }}, -- top
-		{{Rect.x,           Rect.y + Rect[H]}, {Rect.x + Rect[W], Rect.y + Rect[H]}}, -- below
+		{{Rect.x,           Rect.y + Rect[H]}, {Rect.x + Rect[W], Rect.y + Rect[H]}}, -- bottom
 		{{Rect.x,           Rect.y},           {Rect.x,           Rect.y + Rect[H]}}, -- left
 		{{Rect.x + Rect[W], Rect.y},           {Rect.x + Rect[W], Rect.y + Rect[H]}}, -- right
 	}
