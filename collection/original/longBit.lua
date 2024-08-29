@@ -1,6 +1,6 @@
 -- NAME:    longBit
 -- AUTHOR:  DuckAfire
--- VERSION: 3.5.2
+-- VERSION: 3.5.3
 -- LICENSE: Zlib License
 --
 -- Copyright (C) 2024 DuckAfire <duckafire.github.io/nest>
@@ -323,7 +323,7 @@ end
 local function LIB_clear(Type, absolute, init, max)
 	-- check if "_type" is valid
 	local isValid = false
-	local allTypes = {"all", "memory", "class", "nonMemory", "nonClass"}
+	local allTypes = {"all", "memory", "class", "noMemory", "noClass"}
 
 	for i = 1, #allTypes do
 		if Type == allTypes[i] then
@@ -368,7 +368,7 @@ local function LIB_clear(Type, absolute, init, max)
 	end
 	
 	-- clear memories without class
-	if Type == "nonClass" then
+	if Type == "noClass" then
 		for i = init, max do
 			if LBC[i] == nil then
 				pmem(i, memZero)
@@ -381,7 +381,7 @@ local function LIB_clear(Type, absolute, init, max)
 	end
 
 	-- clear classes without memory
-	if Type == "nonMemory" then
+	if Type == "noMemory" then
 		local id = 0
 
 		for i = #CID, 1, -1 do
