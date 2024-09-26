@@ -2,7 +2,8 @@ collection/original/head.txt
 collection/compacted/*.lua
 collection/original/*.limfile
 collection/original/*.sh
-template-page-to-wiki.md 
+template-page-to-wiki.md
 toFuture.txt
 wiki
 docs
+releases
