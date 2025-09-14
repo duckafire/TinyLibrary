@@ -18,12 +18,12 @@ It is a free and open-source **Libraries Collection**, created for to easily the
 
 ### Libraries
 
-| Name             | Version | Short Descrition                                         |
-| :-:              | :-:     | :--                                                      |
-| coli2DA          | 5.y.z   | Check collision between rectangles, squares and circles. |
-| print+           | 5.y.z   | To facilite the customization and manipulation of text.  |
-| Magic_palette    | 3.y.z   | Permit to change the color calette at run time.          |
-| mapper-of-memory | 4.y.z   | Use the memory of a single *slot* for multiple things.   |
+| Name             | Version | Short Descrition                                     |
+| :-:              | :-:     | :--                                                  |
+| coli2DA          | 5.y.z   | It checks collisions between *objects* and map tiles.|
+| print+           | 5.y.z   | It facilites the text customization/manipulation.    |
+| Magic_palette    | 3.y.z   | It changes the color palette during the run time.    |
+| mapper-of-memory | 4.y.z   | It divides persistent memory slots in small *slots*. |
 
 ### How to use
 
@@ -38,9 +38,9 @@ It is a free and open-source **Libraries Collection**, created for to easily the
 > [!NOTE]
 > These codes were compacted using [LIM][lim].
 
-### About project
+### About this project
 
-* [Wiki][wiki]
-* [Libraries list][lib-list]
-* [See TinyLibrary showcase][showcase]
-* [LIM: Lua Library Compactor][lim]
+* [TinyLibrary Wiki][wiki]
+* [Available libraries][libs]
+* [TinyLibrary Showcase][showcase]
+* [LIM: Lua L**i**brary Co**m**pactor][lim]
