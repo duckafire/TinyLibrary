@@ -30,9 +30,9 @@
 -- will exist if a specific
 -- condition is `true`, or to
 -- "delete" properties
-local EMPTY_FUNC, NULL = function () end
 
-local DEBUG_OBJ_HITBOXES = {}
+local NULL, DEBUG_OBJ_HITBOXES, EMPTY_FUNC = nil, {}, function () end
+local mapx, mapy = 0, 0
 
 --=======================================================================================--
 -- CREATE OBJECTS
@@ -211,7 +211,7 @@ local function addMapDebugFields(obj, debug, sw, sh)
 	then
 		obj._d.mmi = 1 -- two loops
 
-		obj._d.mdb = function (obj, ax, ay)
+		function obj._d.mdb(obj, ax, ay)
 			local x, y = ax or obj._d.mx, ay or obj._d.my
 
 			for i = -1, obj._d.mmi, 2
@@ -224,7 +224,7 @@ local function addMapDebugFields(obj, debug, sw, sh)
 		then
 			obj._d.mcbc = debug.cbcolor or obj._d.mbc
 
-			obj._d.mdcb = function (obj)
+			function obj._d.mdcb(obj)
 				circb(obj.x + obj._d.mw, obj.y + obj._d.mh, 1, obj._d.mcbc)
 			end
 		end
@@ -290,8 +290,6 @@ end
 --=======================================================================================--
 -- COLLISION WITH MAP TILES
 
-local mapx, mapy = 0, 0
-
 function setMapPos(x, y)
 	mapx, mapy = x + 0, y + 0
 end
@@ -324,6 +322,7 @@ function setTiles(obj, flag)
 	end
 
 	obj.tcol = {}
+	obj.tcol._obj = obj
 	obj.tcol._ist = type(flag) == "table" -- IS Table?
 	obj.tcol._f   = flag
 
@@ -332,7 +331,7 @@ function setTiles(obj, flag)
 
 		print(self._f, 50, 0, 2)
 
-		return checkTileCollision(obj, direction, flag, mx or mapx, my or mapy)
+		return checkTileCollision(self._obj, direction, flag, mx or mapx, my or mapy)
 	end
 
 	function obj.tcol:top(   mx, my) return self:_ch(0, mx, my) end
@@ -367,22 +366,8 @@ local function circEucDist(obj, circ, objRad)
 	return (obj.x - circ.x) ^ 2 + (obj.y - circ.y) ^ 2 <= (objRad + circ.r) ^ 2
 end
 
-function pixXrect(obj, rect)
-	-- the use of `<`, instead `<=`, allows
-	-- to avoid decrement the additions (by 1)
-
-	return obj.x >= rect.x
-	   and obj.x  < rect.x + rect.w
-	   and obj.y >= rect.y
-	   and obj.y  < rect.y + rect.h
-end
-
-function pixXcirc(obj, circ)
-	return circEucDist(obj, circ, 0)
-end
-
 -- NOTES:
--- ip == Impact Pixel
+-- poi == Point Of Impact
 -- `lambda` can be a boolean or a function
 -- (that it receive two arguments: x an y)
 
@@ -402,7 +387,7 @@ local function runl(lambda, ...)
 	end
 end
 
-local function rip(lambda, rectA, rectB)
+local function rpoi(lambda, rectA, rectB)
 	local x = (math.max(rectA.x, rectB.x) + math.min(rectA.x + rectA.w - 1, rectB.x + rectB.w - 1)) / 2
 	local y = (math.max(rectA.y, rectB.y) + math.min(rectA.y + rectA.h - 1, rectB.y + rectB.h - 1)) / 2
 
@@ -410,7 +395,7 @@ local function rip(lambda, rectA, rectB)
 	return newPix(x, y)
 end
 
-local function cip(lambda, circA, circB)
+local function cpoi(lambda, circA, circB)
 	local r = circA.r + circB.r
 	local x = (circA.x * circB.r + circB.x * circA.r) / r
 	local y = (circA.y * circB.r + circB.y * circA.r) / r
@@ -419,7 +404,7 @@ local function cip(lambda, circA, circB)
 	return newPix(x, y)
 end
 
-local function rxcip(lambda, x, y)
+local function simplepoi(lambda, x, y)
 	runl(lambda, x, y)
 	return newPix(x, y)
 end
@@ -429,14 +414,14 @@ function rects(rectA, rectB, lambda)
                and math.max(rectA.y, rectB.y) < math.min(rectA.y + rectA.h, rectB.y + rectB.h)
 
 	updateHitboxColor(result, rectA, rectB)
-	return result, callL(result, lambda, rip, rectA, rectB)
+	return result, callL(result, lambda, rpoi, rectA, rectB)
 end
 
 function circs(circA, circB, lambda)
 	local result = circEucDist(circA, circB, circA.r)
 
 	updateHitboxColor(result, circA, circB)
-	return result, callL(result, lambda, cip, circA, circB)
+	return result, callL(result, lambda, cpoi, circA, circB)
 end
 
 function rectXcirc(rect, circ, lambda)
@@ -446,7 +431,60 @@ function rectXcirc(rect, circ, lambda)
 	local result = circEucDist(newPix(x, y), circ, 0)
 
 	updateHitboxColor(result, rect, circ)
-	return result, callL(result, lambda, rxcip, x, y)
+	return result, callL(result, lambda, simplepoi, x, y)
+end
+
+function pixs(pixA, pixB, lambda)
+	local result = (pixA.x == pixB.x and pixA.y == pixB.y)
+
+	return result, callL(result, lambda, simplepoi, pixA.x, pixA.y)
+end
+
+function pixXrect(pix, rect, lambda)
+	-- the use of `<`, instead `<=`, allows
+	-- to avoid decrement the additions (by 1)
+	local result = pix.x >= rect.x and pix.x < rect.x + rect.w
+               and pix.y >= rect.y and pix.y < rect.y + rect.h
+
+	return result, callL(result, lambda, simplepoi, pix.x, pix.y)
+end
+
+function pixXcirc(pix, circ, lambda)
+	local result = circEucDist(pix, circ, 0)
+
+	return result, callL(result, lambda, simplepoi, pix.x, pix.y)
+end
+
+function setColiMethods(obj, poiMethods)
+	if poiMethods
+	then
+		function obj:catchpoi()
+			return function (x, y)
+				self._poix = x
+				self._poiy = y
+			end
+		end
+
+		function obj:getpoi()
+			return self._poix, self._poiy
+		end
+	end
+
+	if obj.w
+	then
+		function obj:crect(rect, lambda) return rects(    self, rect, lambda) end
+		function obj:ccirc(circ, lambda) return rectXcirc(self, circ, lambda) end
+		function obj:cpix( pix,  lambda) return pixXrect( pix,  self, lambda) end
+	elseif obj.r
+	then
+		function obj:crect(rect, lambda) return rectXcirc(rect, self, lambda) end
+		function obj:ccirc(circ, lambda) return circs(    self, circ, lambda) end
+		function obj:cpix( pix,  lambda) return pixXcirc( pix,  self, lambda) end
+	else
+		function obj:crect(rect, lambda) return pixXrect( self, rect, lambda) end
+		function obj:ccirc(circ, lambda) return pixXcirc( self, circ, lambda) end
+		function obj:cpix( pix,  lambda) return pixs(     self, pix,  lambda) end
+	end
 end
 
 --=======================================================================================--
