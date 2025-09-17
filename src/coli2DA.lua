@@ -77,17 +77,17 @@ local function objDebug(obj, opt, draw, drawb)
 		return nil
 	end
 
-	local debug = {}
+	obj._d = {}
 
-	debug.co  = opt.color  or 2                   -- COlor
-	debug.bc  = opt.bcolor or 0                   -- Board Color
-	debug.cc  = opt.ccolor or 4                   -- Collision Color
-	debug.isC = false                             -- IS Colliding
-	debug.dr  = draw                              -- DRaw
-	debug.db  = opt.board and drawb or EMPTY_FUNC -- Draw Board
+	obj._d.dc = opt.color  or 2                   -- Default Color
+	obj._d.cc = opt.ccolor or 4                   -- Collision Color
+	obj._d.co = obj._d.dc                         -- hitbox COlor
+	obj._d.bc = opt.bcolor or 0                   -- Board Color
+	obj._d.dr = draw                              -- DRaw
+	obj._d.db = opt.board and drawb or EMPTY_FUNC -- Draw Board
 
-	function obj._d:gc() -- Get Color
-		return self.isC and self.cc or self.co
+	function obj._d:uc(result) -- Update hitbox Color
+		self.co = result and self.cc or self.dc
 	end
 
 	function obj:drawHitbox()
@@ -101,16 +101,14 @@ local function objDebug(obj, opt, draw, drawb)
 	then
 		table.insert(opt.debugObjHitboxes or DEBUG_OBJ_HITBOXES, obj)
 	end
-
-	return debug
 end
 
 function newRect(_x, _y, _w, _h, debug)
-	local obj = {x = _x + 0, y = _y + 0, w = _w + 0, h = not _h and _w or _h + 0}
+	local obj = {x = _x + 0, y = _y + 0, w = _w + 0, h = type(_h) ~= "number" and _w or _h + 0}
 
-	obj._d = objDebug(obj, debug,
+	objDebug(obj, type(_h) == "table" and _h or debug,
 		function (obj)
-			rectb(obj.x, obj.y, obj.w, obj.h, obj._d.gc())
+			rectb(obj.x, obj.y, obj.w, obj.h, obj._d.co)
 		end,
 		function (obj)
 			for i = -1, 1, 2
@@ -126,9 +124,9 @@ end
 function newCirc(_x, _y, _r, debug)
 	local obj = {x = _x + 0, y = _y + 0, r = _r + 0}
 
-	obj._d = objDebug(obj, debug,
+	objDebug(obj, debug,
 		function (obj)
-			circb(obj.x, obj.y, obj.r, obj._d.gc())
+			circb(obj.x, obj.y, obj.r, obj._d.co)
 		end,
 		function (obj)
 			for i = -1, 1, 2
@@ -144,9 +142,9 @@ end
 function newPix(_x, _y, debug)
 	local obj = {x = _x + 0, y = _y + 0}
 
-	obj._d = objDebug(obj, debug,
+	objDebug(obj, debug,
 		function (obj)
-			pix(obj.x, obj.y, obj._d.gc())
+			pix(obj.x, obj.y, obj._d.co)
 		end,
 		function (obj)
 			circb(obj.x, obj.y, 1, obj._d.bc)
@@ -319,7 +317,6 @@ end
 -- TODO: auto-add more "points" when the
 -- scales are bigger than 8 (or its
 -- multiples).
--- TODO: add debug mode (show the "anchors")
 function setTiles(obj, flag)
 	if obj.tiles
 	then
@@ -349,6 +346,22 @@ end
 --=======================================================================================--
 -- OBJECT COLLISIONS
 
+local function updateHitboxColor(result, ...)
+	for _, obj in ipairs({...})
+	do
+		-- it can not check only if `_d`
+		-- exists because other functions
+		-- use this fields, in other words,
+		-- it is defined do not indicate
+		-- that the user want show the
+		-- object hitbox
+		if obj._d and obj._d.uc
+		then
+			obj._d:uc(result)
+		end
+	end
+end
+
 local function circEucDist(obj, circ, objRad)
 	-- based EUClidean DISTance (CIRCle)
 	return (obj.x - circ.x) ^ 2 + (obj.y - circ.y) ^ 2 <= (objRad + circ.r) ^ 2
@@ -368,35 +381,72 @@ function pixXcirc(obj, circ)
 	return circEucDist(obj, circ, 0)
 end
 
-function rects(rectA, rectB)
-	return math.max(rectA.x, rectB.x) < math.min(rectA.x + rectA.w, rectB.x + rectB.w)
-	   and math.max(rectA.y, rectB.y) < math.min(rectA.y + rectA.h, rectB.y + rectB.h)
-end
+-- NOTES:
+-- ip == Impact Pixel
+-- `lambda` can be a boolean or a function
+-- (that it receive two arguments: x an y)
 
-function circs(circA, circB)
-	return circEucDist(circA, circB, circA.r)
-end
-
---[[ TODO
-function rectXcirc(rect, circ)
-	if not rects(rect, newRect(circ.x - circ.r, circ.y - circ.r, circ.r * 2))
+local function callL(result, lambda, func, ...)
+	if result and lambda
 	then
-		return false
+		return func(lambda, ...)
 	end
 
-	-- square
-	if rect.w == rect.h
-	then
-		local rectRa = rect.w // 2
-
-		return rects(rect, newRect(circ.x - circ.r, circ.y - circ.r, circ.r * 2))
-		   and circs(circ, newCirc(rect.x + rectRa, rect.y + rectRa, rectRa))
-   end
-
-   return false
+	return nil
 end
-]]
 
--- TODO: impactPixel
+local function runl(lambda, ...)
+	if type(lambda) == "function"
+	then
+		lambda(...)
+	end
+end
+
+local function rip(lambda, rectA, rectB)
+	local x = (math.max(rectA.x, rectB.x) + math.min(rectA.x + rectA.w - 1, rectB.x + rectB.w - 1)) / 2
+	local y = (math.max(rectA.y, rectB.y) + math.min(rectA.y + rectA.h - 1, rectB.y + rectB.h - 1)) / 2
+
+	runl(lambda, x, y)
+	return newPix(x, y)
+end
+
+local function cip(lambda, circA, circB)
+	local r = circA.r + circB.r
+	local x = (circA.x * circB.r + circB.x * circA.r) / r
+	local y = (circA.y * circB.r + circB.y * circA.r) / r
+
+	runl(lambda, x, y)
+	return newPix(x, y)
+end
+
+local function rxcip(lambda, x, y)
+	runl(lambda, x, y)
+	return newPix(x, y)
+end
+
+function rects(rectA, rectB, lambda)
+	local result = math.max(rectA.x, rectB.x) < math.min(rectA.x + rectA.w, rectB.x + rectB.w)
+               and math.max(rectA.y, rectB.y) < math.min(rectA.y + rectA.h, rectB.y + rectB.h)
+
+	updateHitboxColor(result, rectA, rectB)
+	return result, callL(result, lambda, rip, rectA, rectB)
+end
+
+function circs(circA, circB, lambda)
+	local result = circEucDist(circA, circB, circA.r)
+
+	updateHitboxColor(result, circA, circB)
+	return result, callL(result, lambda, cip, circA, circB)
+end
+
+function rectXcirc(rect, circ, lambda)
+	local x = math.max(rect.x, math.min(circ.x, rect.x + rect.w - 1))
+	local y = math.max(rect.y, math.min(circ.y, rect.y + rect.h - 1))
+
+	local result = circEucDist(newPix(x, y), circ, 0)
+
+	updateHitboxColor(result, rect, circ)
+	return result, callL(result, lambda, rxcip, x, y)
+end
 
 --=======================================================================================--
