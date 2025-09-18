@@ -31,16 +31,23 @@
 -- condition is `true`, or to
 -- "delete" properties
 
-local NULL, DEBUG_OBJ_HITBOXES, EMPTY_FUNC = nil, {}, function () end
+local NULL, DEBUG_OBJ_HITBOXES, DEBUG_OBJ_TPOINTS, EMPTY_FUNC = nil, {}, {}, function () end
 local mapx, mapy = 0, 0
 
 --=======================================================================================--
 -- CREATE OBJECTS
 
+local function newDebugField(obj)
+	if not obj._d
+	then
+		obj._d = {}
+	end
+end
+
 function drawHitboxes(separate, src)
 	src = src or DEBUG_OBJ_HITBOXES
 
-	if separate
+	if separate == false
 	then
 		for _, obj in ipairs(src) do obj:drawHitbox() end
 		return
@@ -56,7 +63,7 @@ end
 
 --[[
 
-objDebug, newRect, newCirc, newPix:
+addCreationalDebugFields, newRect, newCirc, newPix:
 
 debug (parameter; it is a table)
 	*color           : int   : 2
@@ -71,14 +78,13 @@ debug (parameter; it is a table)
 
 ]]
 
-local function objDebug(obj, opt, draw, drawb)
+local function addCreationalDebugFields(obj, opt, draw, drawb)
 	if not opt or not opt.enableDebug
 	then
 		return nil
 	end
 
-	obj._d = {}
-
+	newDebugField(obj)
 	obj._d.dc = opt.color  or 2                   -- Default Color
 	obj._d.cc = opt.ccolor or 4                   -- Collision Color
 	obj._d.co = obj._d.dc                         -- hitbox COlor
@@ -106,7 +112,7 @@ end
 function newRect(_x, _y, _w, _h, debug)
 	local obj = {x = _x + 0, y = _y + 0, w = _w + 0, h = type(_h) ~= "number" and _w or _h + 0}
 
-	objDebug(obj, type(_h) == "table" and _h or debug,
+	addCreationalDebugFields(obj, type(_h) == "table" and _h or debug,
 		function (obj)
 			rectb(obj.x, obj.y, obj.w, obj.h, obj._d.co)
 		end,
@@ -124,7 +130,7 @@ end
 function newCirc(_x, _y, _r, debug)
 	local obj = {x = _x + 0, y = _y + 0, r = _r + 0}
 
-	objDebug(obj, debug,
+	addCreationalDebugFields(obj, debug,
 		function (obj)
 			circb(obj.x, obj.y, obj.r, obj._d.co)
 		end,
@@ -142,7 +148,7 @@ end
 function newPix(_x, _y, debug)
 	local obj = {x = _x + 0, y = _y + 0}
 
-	objDebug(obj, debug,
+	addCreationalDebugFields(obj, debug,
 		function (obj)
 			pix(obj.x, obj.y, obj._d.co)
 		end,
@@ -161,7 +167,7 @@ end
 
 addMapDebugFields, updateMapDebugFields, getMapGridPosition:
 
-debug (parameter; it is a table)
+debug
 	*color      : int   : 2
 	*bcolor     : int   : 0
 	*ccolor     : int   : ~
@@ -176,10 +182,7 @@ debug (parameter; it is a table)
 ]]
 
 local function addMapDebugFields(obj, debug, sw, sh)
-	if not obj._d
-	then
-		obj._d = {}
-	end
+	newDebugField(obj)
 
 	if obj._d.mco
 	then
@@ -298,40 +301,209 @@ function getMapPos()
 	return mapx, mapy
 end
 
-local function checkTileCollision(obj, direction, flag, mx, my)
-	local w, h, x1, y1, x2, y2 = obj.w, obj.h
+local function drawTilep(obj, maintain, anonymFunc)
+	for i, dir in ipairs(obj._d.tp)
+	do
+		for j, item in ipairs(dir)
+		do
+			anonymFunc(obj, item, j, dir)
+		end
 
-	-- vertexes
-	if     direction == 0 then x1, y1, x2, y2 =  0, -1,  w - 1, -1
-	elseif direction == 1 then x1, y1, x2, y2 =  0,  h,  w - 1,  h
-	elseif direction == 2 then x1, y1, x2, y2 = -1,  0,     -1,  h - 1
-	elseif direction == 3 then x1, y1, x2, y2 =  w,  0,      w,  h - 1
+		if not maintain
+		then
+			-- clear it
+			obj._d.tp[i] = {}
+		end
 	end
-
-	return fget(mget((obj.x + x1) // 8 + mx, (obj.y + y1) // 8 + my), flag)
-	    or fget(mget((obj.x + x2) // 8 + mx, (obj.y + y2) // 8 + my), flag)
 end
 
--- TODO: auto-add more "points" when the
--- scales are bigger than 8 (or its
--- multiples).
-function setTiles(obj, flag)
-	if obj.tiles
+function drawTilePoints(separate, maintain, src)
+	src = src or DEBUG_OBJ_TPOINTS
+
+	if separate == false
+	then
+		for _, obj in ipairs(src) do
+			obj:drawTilePoints(maintain)
+		end
+
+		return
+	end
+
+	for _, cur in ipairs(src) do
+		-- if this clear them, the
+		-- point will not be drawn
+		drawTilep(cur, true, function (obj, item)
+			obj._d:tdb(item.x, item.y)
+		end)
+	end
+
+	for _, cur in ipairs(src) do
+		drawTilep(cur, maintain, function (obj, item, pixId, originTable)
+			obj._d:tdr(item.x, item.y)
+		end)
+	end
+end
+
+--[[
+
+addTilesDebugFields, setTilesCollision
+
+debug
+	*color      : int   : 2
+	*bcolor     : int   : 0
+	board       : bool  : false
+	enableDebug : bool  : false
+	saveInTable : bool  : true
+
+`*`: add to the object
+
+]]
+
+local function addTilesDebugFields(obj, opt)
+	if not opt or not opt.enableDebug
+	then
+		return nil
+	end
+
+	newDebugField(obj)
+	obj._d.tp = { -- Tile collision Points
+		{}, -- top
+		{}, -- bottom
+		{}, -- left
+		{}  -- right
+	}
+
+	obj._d.tco = opt.color  or 2 -- Tile collision COlor
+	obj._d.tbc = opt.bcolor or 0 -- Tile collision Board Color
+	obj._d.tdb = EMPTY_FUNC      -- Tile collision Draw Board
+
+	function obj._d:tdr(x, y)
+		pix(x, y, self.tco)
+	end
+
+	if opt.board
+	then
+		function obj._d:tdb(x, y)
+			circb(x, y, 1, self.tbc)
+		end
+	end
+
+	function obj.tcol:drawTilePoints(maintain)
+		drawTilep(self._obj, maintain, function (obj, item, pixId, originTable)
+
+			obj._d:tdb(item.x, item.y)
+			obj._d:tdr(item.x, item.y)
+
+		end)
+	end
+
+	function obj._d:ctp(start, dir, x, y) -- Catch Tiles collision Points
+		if start
+		then
+			self.tp[dir + 1] = {}
+			return
+		end
+
+		table.insert(self.tp[dir + 1], newPix(x, y))
+	end
+
+	if opt.saveInTable ~= false
+	then
+		table.insert(DEBUG_OBJ_TPOINTS, obj)
+	end
+end
+
+local function checkTileCollision(tcol, dir, flag, mx, my)
+	-- a == Adjust
+	-- d == Dimension
+	-- m == Maximum
+
+	-- row by default
+	local dfield, maxdfield = "w", "mw"
+
+	-- the "less one" is referring
+	-- the first pixel of the object
+	local adj = newRect(0, 0, 0)
+	adj.mw = tcol._w - 1
+	adj.mh = tcol._h - 1
+
+	-- if it is checking at row format,
+	-- the "adjust property" will move
+	-- horizontally, otherwise it will
+	-- move vertically
+	if dir < 2 then adj.y = (dir == 0 and -1 or tcol._h)
+	else            adj.x = (dir == 2 and -1 or tcol._w)
+	                dfield, maxdfield = "h", "mh"
+	end
+
+	tcol._obj._d:ctp(true, dir)
+
+	-- TODO: no-multiple of 8 have
+	-- points in incorrect positions
+	local minloops, x, y = adj[maxfield] == 1 and 1 or 2
+	repeat
+		x, y = tcol._x + adj.x + adj.w, tcol._y + adj.y + adj.h
+
+		if tcol._obj._d and tcol._obj._d.ctp
+		then
+			tcol._obj._d:ctp(false, dir, x, y)
+		end
+
+		if fget(mget(x // 8 + mx, y // 8 + my), flag)
+		then
+			return true
+		end
+
+		adj[dfield]    = adj[dfield]    + (adj[maxdfield] > 8 and 8 or adj[maxdfield])
+		adj[maxdfield] = adj[maxdfield] - 8
+		minloops       = minloops - 1
+	until
+		adj[maxdfield] < -1 and minloops == 0
+
+	return false
+end
+
+function setTilesCollision(obj, flag, rectArea, debug)
+	if obj.tcol
 	then
 		return false
 	end
+
+	rectArea = rectArea and newRect(table.unpack(rectArea)) or nil
 
 	obj.tcol = {}
 	obj.tcol._obj = obj
 	obj.tcol._ist = type(flag) == "table" -- IS Table?
 	obj.tcol._f   = flag
+	obj.tcol._ax  = rectArea and rectArea.x or 0
+	obj.tcol._ay  = rectArea and rectArea.y or 0
+	obj.tcol._x   = obj.x + obj.tcol._ax
+	obj.tcol._y   = obj.y + obj.tcol._ay
+	obj.tcol._w   = rectArea and rectArea.w or obj.w
+	obj.tcol._h   = rectArea and rectArea.h or obj.h
+
+	addTilesDebugFields(obj, debug)
+
+	function obj.tcol:setxy(x, y)
+		self._obj.x = (x or self._obj.x)
+		self._obj.y = (y or self._obj.y)
+
+		self._x = self._obj.x + self._ax
+		self._y = self._obj.y + self._ay
+	end
+
+	function obj.tcol:setwh(w, h)
+		self._obj.w = w
+		self._obj.h = h
+
+		self._w = w
+		self._h = h
+	end
 
 	function obj.tcol:_ch(direction, mx, my) -- CHeck
 		local flag = self._ist and self._f[direction + 1] or self._f
 
-		print(self._f, 50, 0, 2)
-
-		return checkTileCollision(self._obj, direction, flag, mx or mapx, my or mapy)
+		return checkTileCollision(self, direction, flag, mx or mapx, my or mapy)
 	end
 
 	function obj.tcol:top(   mx, my) return self:_ch(0, mx, my) end
@@ -368,91 +540,91 @@ end
 
 -- NOTES:
 -- poi == Point Of Impact
--- `lambda` can be a boolean or a function
+-- `anonymFunc` can be a boolean or a function
 -- (that it receive two arguments: x an y)
 
-local function callL(result, lambda, func, ...)
-	if result and lambda
+local function callaf(result, anonymFunc, func, ...)
+	if result and anonymFunc
 	then
-		return func(lambda, ...)
+		return func(anonymFunc, ...)
 	end
 
 	return nil
 end
 
-local function runl(lambda, ...)
-	if type(lambda) == "function"
+local function runaf(anonymFunc, ...)
+	if type(anonymFunc) == "function"
 	then
-		lambda(...)
+		anonymFunc(...)
 	end
 end
 
-local function rpoi(lambda, rectA, rectB)
+local function rpoi(anonymFunc, rectA, rectB)
 	local x = (math.max(rectA.x, rectB.x) + math.min(rectA.x + rectA.w - 1, rectB.x + rectB.w - 1)) / 2
 	local y = (math.max(rectA.y, rectB.y) + math.min(rectA.y + rectA.h - 1, rectB.y + rectB.h - 1)) / 2
 
-	runl(lambda, x, y)
+	runaf(anonymFunc, x, y)
 	return newPix(x, y)
 end
 
-local function cpoi(lambda, circA, circB)
+local function cpoi(anonymFunc, circA, circB)
 	local r = circA.r + circB.r
 	local x = (circA.x * circB.r + circB.x * circA.r) / r
 	local y = (circA.y * circB.r + circB.y * circA.r) / r
 
-	runl(lambda, x, y)
+	runaf(anonymFunc, x, y)
 	return newPix(x, y)
 end
 
-local function simplepoi(lambda, x, y)
-	runl(lambda, x, y)
+local function simplepoi(anonymFunc, x, y)
+	runaf(anonymFunc, x, y)
 	return newPix(x, y)
 end
 
-function rects(rectA, rectB, lambda)
+function rects(rectA, rectB, anonymFunc)
 	local result = math.max(rectA.x, rectB.x) < math.min(rectA.x + rectA.w, rectB.x + rectB.w)
                and math.max(rectA.y, rectB.y) < math.min(rectA.y + rectA.h, rectB.y + rectB.h)
 
 	updateHitboxColor(result, rectA, rectB)
-	return result, callL(result, lambda, rpoi, rectA, rectB)
+	return result, callaf(result, anonymFunc, rpoi, rectA, rectB)
 end
 
-function circs(circA, circB, lambda)
+function circs(circA, circB, anonymFunc)
 	local result = circEucDist(circA, circB, circA.r)
 
 	updateHitboxColor(result, circA, circB)
-	return result, callL(result, lambda, cpoi, circA, circB)
+	return result, callaf(result, anonymFunc, cpoi, circA, circB)
 end
 
-function rectXcirc(rect, circ, lambda)
+function rectXcirc(rect, circ, anonymFunc)
 	local x = math.max(rect.x, math.min(circ.x, rect.x + rect.w - 1))
 	local y = math.max(rect.y, math.min(circ.y, rect.y + rect.h - 1))
 
 	local result = circEucDist(newPix(x, y), circ, 0)
 
 	updateHitboxColor(result, rect, circ)
-	return result, callL(result, lambda, simplepoi, x, y)
+	return result, callaf(result, anonymFunc, simplepoi, x, y)
 end
 
-function pixs(pixA, pixB, lambda)
+function pixs(pixA, pixB, anonymFunc)
 	local result = (pixA.x == pixB.x and pixA.y == pixB.y)
 
-	return result, callL(result, lambda, simplepoi, pixA.x, pixA.y)
+	return result, callaf(result, anonymFunc, simplepoi, pixA.x, pixA.y)
 end
 
-function pixXrect(pix, rect, lambda)
+function pixXrect(pix, rect, anonymFunc)
 	-- the use of `<`, instead `<=`, allows
 	-- to avoid decrement the additions (by 1)
 	local result = pix.x >= rect.x and pix.x < rect.x + rect.w
                and pix.y >= rect.y and pix.y < rect.y + rect.h
 
-	return result, callL(result, lambda, simplepoi, pix.x, pix.y)
+	return result, callaf(result, anonymFunc, simplepoi, pix.x, pix.y)
 end
 
-function pixXcirc(pix, circ, lambda)
+function pixXcirc(pix, circ, anonymFunc)
 	local result = circEucDist(pix, circ, 0)
 
-	return result, callL(result, lambda, simplepoi, pix.x, pix.y)
+	return result, callaf(result, anonymFunc, simplepoi, pix.x, pix.y)
 end
 
 function setColiMethods(obj, poiMethods)
@@ -460,6 +632,7 @@ function setColiMethods(obj, poiMethods)
 	then
 		function obj:catchpoi()
 			return function (x, y)
+				-- declared here
 				self._poix = x
 				self._poiy = y
 			end
@@ -472,19 +645,20 @@ function setColiMethods(obj, poiMethods)
 
 	if obj.w
 	then
-		function obj:crect(rect, lambda) return rects(    self, rect, lambda) end
-		function obj:ccirc(circ, lambda) return rectXcirc(self, circ, lambda) end
-		function obj:cpix( pix,  lambda) return pixXrect( pix,  self, lambda) end
+		function obj:crect(rect, anonymFunc) return rects(    self, rect, anonymFunc) end
+		function obj:ccirc(circ, anonymFunc) return rectXcirc(self, circ, anonymFunc) end
+		function obj:cpix( pix,  anonymFunc) return pixXrect( pix,  self, anonymFunc) end
 	elseif obj.r
 	then
-		function obj:crect(rect, lambda) return rectXcirc(rect, self, lambda) end
-		function obj:ccirc(circ, lambda) return circs(    self, circ, lambda) end
-		function obj:cpix( pix,  lambda) return pixXcirc( pix,  self, lambda) end
+		function obj:crect(rect, anonymFunc) return rectXcirc(rect, self, anonymFunc) end
+		function obj:ccirc(circ, anonymFunc) return circs(    self, circ, anonymFunc) end
+		function obj:cpix( pix,  anonymFunc) return pixXcirc( pix,  self, anonymFunc) end
 	else
-		function obj:crect(rect, lambda) return pixXrect( self, rect, lambda) end
-		function obj:ccirc(circ, lambda) return pixXcirc( self, circ, lambda) end
-		function obj:cpix( pix,  lambda) return pixs(     self, pix,  lambda) end
+		function obj:crect(rect, anonymFunc) return pixXrect( self, rect, anonymFunc) end
+		function obj:ccirc(circ, anonymFunc) return pixXcirc( self, circ, anonymFunc) end
+		function obj:cpix( pix,  anonymFunc) return pixs(     self, pix,  anonymFunc) end
 	end
 end
 
 --=======================================================================================--
+
