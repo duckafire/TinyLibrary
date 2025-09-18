@@ -37,14 +37,72 @@ local mapx, mapy = 0, 0
 --=======================================================================================--
 -- CREATE OBJECTS
 
-local function newDebugField(obj)
+-- _d   == debug (it has a lot of debug itens)
+-- _d.o == object (related to objects collisions)
+-- _d.t == tiles (related to tiles collisions)
+-- _d.m == map (related to map grid greograph)
+local function newDebugField(obj, debugGroup)
 	if not obj._d
 	then
 		obj._d = {}
 	end
+
+	if debugGroup and not obj._d[ debugGroup ]
+	then
+		obj._d[ debugGroup ] = {}
+		obj._d[ debugGroup ].obj = obj
+	end
+end
+
+local function setDebugGraphColors(debugField, opt, includeDC, includeCC, default)
+	-- dc : Default Color
+	-- cc : Collision Color
+	-- bc : Board Color
+	-- co : Current cOlor
+	
+	default = default or {}
+	local dc = opt.color  or (default.dc or 2)
+	
+	if includeDC
+	then
+		debugField.dc = dc
+	end
+	
+	if includeDC or includeCC
+	then
+		debugField.cc = opt.ccolor or (default.cc or 4)
+	end
+
+	debugField.co = dc
+	debugField.bc = opt.bcolor or 0
+end
+
+local function saveInTable(obj, opt, default)
+	-- it can be `nil`;
+	-- defaul: `true`
+	if opt.saveInTable ~= false
+	then
+		table.insert(opt.debugObjHitboxes or default, obj)
+	end
+end
+
+local function doesItExistDebugField(obj, ...)
+	-- check if an object exists inside
+	-- other, after check if other (2nd)
+	-- exists inside the founded object
+	-- (whether it was found), after ...
+	local fields = {...}
+
+	if #fields == 0 or (obj[fields[1]] and doesItExistDebugField( obj[fields[1]], table.unpack(fields, 2) ))
+	then
+		return true
+	end
+
+	return false
 end
 
 function drawHitboxes(separate, src)
+	-- separate is `true` by default
 	src = src or DEBUG_OBJ_HITBOXES
 
 	if separate == false
@@ -57,8 +115,8 @@ function drawHitboxes(separate, src)
 	-- of objects above, overrides
 	-- the visual-hitbox of objects
 	-- below
-	for _, obj in ipairs(src) do obj._d.db(obj) end
-	for _, obj in ipairs(src) do obj._d.dr(obj) end
+	for _, obj in ipairs(src) do obj._d.o.db(obj) end
+	for _, obj in ipairs(src) do obj._d.o.dr(obj) end
 end
 
 --[[
@@ -84,29 +142,24 @@ local function addCreationalDebugFields(obj, opt, draw, drawb)
 		return nil
 	end
 
-	newDebugField(obj)
-	obj._d.dc = opt.color  or 2                   -- Default Color
-	obj._d.cc = opt.ccolor or 4                   -- Collision Color
-	obj._d.co = obj._d.dc                         -- hitbox COlor
-	obj._d.bc = opt.bcolor or 0                   -- Board Color
-	obj._d.dr = draw                              -- DRaw
-	obj._d.db = opt.board and drawb or EMPTY_FUNC -- Draw Board
+	newDebugField(obj, "o")
+	setDebugGraphColors(obj._d.o, opt, true)
 
-	function obj._d:uc(result) -- Update hitbox Color
+	obj._d.o.dr = draw      -- DRaw
+	obj._d.o.db = opt.board -- Draw Board
+	          and drawb
+	           or EMPTY_FUNC
+
+	function obj._d.o:uc(result) -- Update hitbox Color
 		self.co = result and self.cc or self.dc
 	end
 
 	function obj:drawHitbox()
-		self._d.db(self)
-		self._d.dr(self)
+		self._d.o.db(self)
+		self._d.o.dr(self)
 	end
 
-	-- it can be `nil`;
-	-- defaul: `true`
-	if opt.saveInTable ~= false
-	then
-		table.insert(opt.debugObjHitboxes or DEBUG_OBJ_HITBOXES, obj)
-	end
+	saveInTable(obj, opt, DEBUG_OBJ_HITBOXES)
 end
 
 function newRect(_x, _y, _w, _h, debug)
@@ -114,12 +167,12 @@ function newRect(_x, _y, _w, _h, debug)
 
 	addCreationalDebugFields(obj, type(_h) == "table" and _h or debug,
 		function (obj)
-			rectb(obj.x, obj.y, obj.w, obj.h, obj._d.co)
+			rectb(obj.x, obj.y, obj.w, obj.h, obj._d.o.co)
 		end,
 		function (obj)
 			for i = -1, 1, 2
 			do
-				rectb(obj.x + i, obj.y + i, obj.w + i * -2, obj.h + i * -2, obj._d.bc)
+				rectb(obj.x + i, obj.y + i, obj.w + i * -2, obj.h + i * -2, obj._d.o.bc)
 			end
 		end
 	)
@@ -132,12 +185,12 @@ function newCirc(_x, _y, _r, debug)
 
 	addCreationalDebugFields(obj, debug,
 		function (obj)
-			circb(obj.x, obj.y, obj.r, obj._d.co)
+			circb(obj.x, obj.y, obj.r, obj._d.o.co)
 		end,
 		function (obj)
 			for i = -1, 1, 2
 			do
-				circb(obj.x, obj.y, obj.r + i, obj._d.bc)
+				circb(obj.x, obj.y, obj.r + i, obj._d.o.bc)
 			end
 		end
 	)
@@ -150,10 +203,10 @@ function newPix(_x, _y, debug)
 
 	addCreationalDebugFields(obj, debug,
 		function (obj)
-			pix(obj.x, obj.y, obj._d.co)
+			pix(obj.x, obj.y, obj._d.o.co)
 		end,
 		function (obj)
-			circb(obj.x, obj.y, 1, obj._d.bc)
+			circb(obj.x, obj.y, 1, obj._d.o.bc)
 		end
 	)
 
@@ -182,53 +235,52 @@ debug
 ]]
 
 local function addMapDebugFields(obj, debug, sw, sh)
-	newDebugField(obj)
+	newDebugField(obj, "m")
 
-	if obj._d.mco
+	if doesItExistDebugField(obj, "_d", "m")
 	then
 		return
 	end
 
-	obj._d.mco  = debug.color  or 5          -- Map COlor
-	obj._d.mbc  = debug.bcolor or 0          -- Map Board Color
-	obj._d.mcc  = debug.ccolor or obj._d.mbc -- Map Center Color
-	obj._d.mcbc = NULL                       -- Map Center Board Color
-
-	obj._d.mw  = (8 * (sw or 1)) // 2 -- Map Width
-	obj._d.mh  = (8 * (sh or 1)) // 2 -- Map Height
-
-	obj._d.mdr  = rect       -- Map DRaw
-	obj._d.mmi  = NULL       -- Map Max I
-	obj._d.mdb  = EMPTY_FUNC -- Map Draw Board
-	obj._d.mdcb = EMPTY_FUNC -- Map Draw Center Board
+	setDebugGraphColors(obj._d, opt, nil, nil, {co = 5})
+	obj._d.m.cc  = debug.ccolor or obj._d.m.bc
+	obj._d.m.cbc = NULL                 -- Center Board Color
+	obj._d.m.hw  = (8 * (sw or 1)) // 2 -- Half Width
+	obj._d.m.hh  = (8 * (sh or 1)) // 2 -- Half Height
+	obj._d.m.dr  = rect                 -- DRaw
+	obj._d.m.mi  = NULL                 -- Max I
+	obj._d.m.db  = EMPTY_FUNC           -- Draw Board
+	obj._d.m.dcb = EMPTY_FUNC           -- Draw Center Board
 
 	if debug.fill == false
 	then
-		obj._d.mcc = debug.ccolor or obj._d.mco
+		obj._d.m.cc = debug.ccolor or obj._d.m.co
 
-		obj._d.mmi = -1 -- one loop
-		obj._d.mdr = rectb
+		obj._d.m.mi = -1 -- one loop
+		obj._d.m.dr = rectb
 	end
 
 	if debug.board
 	then
-		obj._d.mmi = 1 -- two loops
+		obj._d.m.mi = 1 -- two loops
+		obj._d.m.x = NULL
+		obj._d.m.y = NULL
 
-		function obj._d.mdb(obj, ax, ay)
-			local x, y = ax or obj._d.mx, ay or obj._d.my
+		function obj._d.m.db(obj, ax, ay)
+			local x, y = ax or obj._d.m.x, ay or obj._d.m.y
 
-			for i = -1, obj._d.mmi, 2
+			for i = -1, obj._d.m.mi, 2
 			do
-				rectb(x + i, y + i, 8 + i * -2, 8 + i * -2, obj._d.mbc)
+				rectb(x + i, y + i, 8 + i * -2, 8 + i * -2, obj._d.m.bc)
 			end
 		end
 
 		if debug.fill == false
 		then
-			obj._d.mcbc = debug.cbcolor or obj._d.mbc
+			obj._d.m.cbc = debug.cbcolor or obj._d.m.bc
 
-			function obj._d.mdcb(obj)
-				circb(obj.x + obj._d.mw, obj.y + obj._d.mh, 1, obj._d.mcbc)
+			function obj._d.m.dcb(obj)
+				circb(obj.x + obj._d.m.w, obj.y + obj._d.m.h, 1, obj._d.m.cbc)
 			end
 		end
 	end
@@ -242,8 +294,8 @@ local function updateMapDebugFields(obj, debug, x, y, sw, sh)
 
 	addMapDebugFields(obj, debug, sw, sh)
 
-	obj._d.mx = x
-	obj._d.my = y
+	obj._d.m.x = x
+	obj._d.m.y = y
 
 	if obj.drawMapGridPos
 	then
@@ -252,12 +304,12 @@ local function updateMapDebugFields(obj, debug, x, y, sw, sh)
 
 	function obj:drawMapGridPos()
 		-- rectangle
-		self._d.mdb(self)
-		self._d.mdr(self._d.mx, self._d.my, 8, 8, self._d.mco)
+		self._d.m.db(self)
+		self._d.m.dr(self._d.m.x, self._d.m.y, 8, 8, self._d.m.co)
 
 		-- pixel
-		self._d.mdcb(self)
-		pix(self.x + self._d.mw, self.y + self._d.mh, self._d.mcc)
+		self._d.m.dcb(self)
+		pix(self.x + self._d.m.w, self.y + self._d.m.h, self._d.m.cc)
 	end
 end
 
@@ -302,7 +354,7 @@ function getMapPos()
 end
 
 local function drawTilep(obj, maintain, anonymFunc)
-	for i, dir in ipairs(obj._d.tp)
+	for i, dir in ipairs(obj._d.t.cp)
 	do
 		for j, item in ipairs(dir)
 		do
@@ -312,7 +364,7 @@ local function drawTilep(obj, maintain, anonymFunc)
 		if not maintain
 		then
 			-- clear it
-			obj._d.tp[i] = {}
+			obj._d.t.cp[i] = {}
 		end
 	end
 end
@@ -333,13 +385,13 @@ function drawTilePoints(separate, maintain, src)
 		-- if this clear them, the
 		-- point will not be drawn
 		drawTilep(cur, true, function (obj, item)
-			obj._d:tdb(item.x, item.y)
+			obj._d.t:db(item.x, item.y)
 		end)
 	end
 
 	for _, cur in ipairs(src) do
 		drawTilep(cur, maintain, function (obj, item, pixId, originTable)
-			obj._d:tdr(item.x, item.y)
+			obj._d.t:dr(item.x, item.y)
 		end)
 	end
 end
@@ -349,11 +401,12 @@ end
 addTilesDebugFields, setTilesCollision
 
 debug
-	*color      : int   : 2
-	*bcolor     : int   : 0
-	board       : bool  : false
-	enableDebug : bool  : false
-	saveInTable : bool  : true
+	*color           : int   : 2
+	*bcolor          : int   : 0
+	board            : bool  : false
+	enableDebug      : bool  : false
+	saveInTable      : bool  : true
+	debugObjHitboxes : table : DEBUG_OBJ_TPOINTS
 
 `*`: add to the object
 
@@ -365,52 +418,48 @@ local function addTilesDebugFields(obj, opt)
 		return nil
 	end
 
-	newDebugField(obj)
-	obj._d.tp = { -- Tile collision Points
+	newDebugField(obj, "t")
+	obj._d.t.cp = { -- Collision Points
 		{}, -- top
 		{}, -- bottom
 		{}, -- left
 		{}  -- right
 	}
 
-	obj._d.tco = opt.color  or 2 -- Tile collision COlor
-	obj._d.tbc = opt.bcolor or 0 -- Tile collision Board Color
-	obj._d.tdb = EMPTY_FUNC      -- Tile collision Draw Board
+	setDebugGraphColors(debugField, opt)
+	obj._d.t.db = EMPTY_FUNC -- Draw Board
 
-	function obj._d:tdr(x, y)
-		pix(x, y, self.tco)
+	function obj._d.t:dr(x, y)
+		pix(x, y, self.co)
 	end
 
 	if opt.board
 	then
-		function obj._d:tdb(x, y)
-			circb(x, y, 1, self.tbc)
+		function obj._d.t:db(x, y)
+			circb(x, y, 1, self.bc)
 		end
 	end
 
 	function obj.tcol:drawTilePoints(maintain)
 		drawTilep(self._obj, maintain, function (obj, item, pixId, originTable)
 
-			obj._d:tdb(item.x, item.y)
-			obj._d:tdr(item.x, item.y)
+			obj._d.t:db(item.x, item.y)
+			obj._d.t:dr(item.x, item.y)
 
 		end)
 	end
 
-	function obj._d:ctp(start, dir, x, y) -- Catch Tiles collision Points
+	function obj._d.t:ctp(start, dir, x, y) -- Catch Tile collision Points
 		if start
 		then
-			self.tp[dir + 1] = {}
+			self.cp[dir + 1] = {}
 			return
 		end
 
-		table.insert(self.tp[dir + 1], newPix(x, y))
+		table.insert(self.cp[dir + 1], newPix(x, y))
 	end
 
-	if opt.saveInTable ~= false
-	then
-		table.insert(DEBUG_OBJ_TPOINTS, obj)
-	end
+	saveInTable(obj, opt, DEBUG_OBJ_TPOINTS)
 end
 
 local function checkTileCollision(tcol, dir, flag, mx, my)
@@ -436,7 +485,7 @@ local function checkTileCollision(tcol, dir, flag, mx, my)
 	                dfield, maxdfield = "h", "mh"
 	end
 
-	tcol._obj._d:ctp(true, dir)
+	tcol._obj._d.t:ctp(true, dir)
 
 	-- TODO: no-multiple of 8 have
 	-- points in incorrect positions
@@ -444,9 +493,9 @@ local function checkTileCollision(tcol, dir, flag, mx, my)
 	repeat
 		x, y = tcol._x + adj.x + adj.w, tcol._y + adj.y + adj.h
 
-		if tcol._obj._d and tcol._obj._d.ctp
+		if doesItExistDebugField(tcol._obj, "_d", "t", "ctp")
 		then
-			tcol._obj._d:ctp(false, dir, x, y)
+			tcol._obj._d.t:ctp(false, dir, x, y)
 		end
 
 		if fget(mget(x // 8 + mx, y // 8 + my), flag)
@@ -526,9 +575,9 @@ local function updateHitboxColor(result, ...)
 		-- it is defined do not indicate
 		-- that the user want show the
 		-- object hitbox
-		if obj._d and obj._d.uc
+		if doesItExistDebugField(obj, "_d", "o", "uc")
 		then
-			obj._d:uc(result)
+			obj._d.o:uc(result)
 		end
 	end
 end
@@ -661,4 +710,3 @@ function setColiMethods(obj, poiMethods)
 end
 
 --=======================================================================================--
-
