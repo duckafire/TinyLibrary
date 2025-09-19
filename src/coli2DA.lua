@@ -101,13 +101,31 @@ local function doesItExistDebugField(obj, ...)
 	return false
 end
 
-function drawHitboxes(separate, src)
+function resetHitboxesColor(src)
+	for _, obj in ipairs(src or DEBUG_OBJ_HITBOXES)
+	do
+		obj:resetHitboxColor()
+	end
+end
+
+local function resetHitboxColor(obj, resetColor)
+	if resetColor ~= false
+	then
+		obj:resetHitboxColor()
+	end
+end
+
+function drawHitboxes(resetColor, separate, src)
 	-- separate is `true` by default
 	src = src or DEBUG_OBJ_HITBOXES
 
 	if separate == false
 	then
-		for _, obj in ipairs(src) do obj:drawHitbox() end
+		for _, obj in ipairs(src)
+		do
+			obj:drawHitbox()
+			resetHitboxColor(obj, resetColor)
+		end
 		return
 	end
 
@@ -115,8 +133,16 @@ function drawHitboxes(separate, src)
 	-- of objects above, overrides
 	-- the visual-hitbox of objects
 	-- below
-	for _, obj in ipairs(src) do obj._d.o.db(obj) end
-	for _, obj in ipairs(src) do obj._d.o.dr(obj) end
+	for _, obj in ipairs(src)
+	do
+		obj._d.o.db(obj)
+	end
+
+	for _, obj in ipairs(src)
+	do
+		obj._d.o.dr(obj)
+		resetHitboxColor(obj, resetColor)
+	end
 end
 
 --[[
@@ -151,7 +177,14 @@ local function addCreationalDebugFields(obj, opt, draw, drawb)
 	           or EMPTY_FUNC
 
 	function obj._d.o:uc(result) -- Update hitbox Color
-		self.co = result and self.cc or self.dc
+		if self.co ~= self.cc and result
+		then
+			self.co = self.cc
+		end
+	end
+
+	function obj:resetHitboxColor()
+		self._d.o.co = self._d.o.dc
 	end
 
 	function obj:drawHitbox()
@@ -234,65 +267,66 @@ debug
 
 ]]
 
-local function addMapDebugFields(obj, debug, sw, sh)
-	newDebugField(obj, "m")
-
+local function addMapDebugFields(obj, opt, onCenter, sw, sh)
 	if doesItExistDebugField(obj, "_d", "m")
 	then
 		return
 	end
 
+	newDebugField(obj, "m")
 	setDebugGraphColors(obj._d.m, opt, nil, nil, {co = 5})
-	obj._d.m.cc  = debug.ccolor or obj._d.m.bc
-	obj._d.m.cbc = NULL                -- Center Board Color
-	obj._d.m.hw = (8 * (sw or 1)) // 2 -- Half Width
-	obj._d.m.hh = (8 * (sh or 1)) // 2 -- Half Height
-	obj._d.m.dr  = rect                -- DRaw
-	obj._d.m.mi  = NULL                -- Max I
-	obj._d.m.db  = EMPTY_FUNC          -- Draw Board
-	obj._d.m.dcb = EMPTY_FUNC          -- Draw Center Board
 
-	if debug.fill == false
+	obj._d.m.cc  = opt.ccolor or obj._d.m.bc
+	obj._d.m.cbc = NULL       -- Center Board Color
+	obj._d.m.dr  = rect       -- DRaw
+	obj._d.m.mi  = NULL       -- Max I
+	obj._d.m.db  = EMPTY_FUNC -- Draw Board
+	obj._d.m.dcb = EMPTY_FUNC -- Draw Center Board
+	obj._d.m.hw  = onCenter and (8 * (sw or 1)) // 2 or 0 -- Half Width
+	obj._d.m.hh  = onCenter and (8 * (sh or 1)) // 2 or 0 -- Half Height
+
+	if opt.fill == false
 	then
-		obj._d.m.cc = debug.ccolor or obj._d.m.co
+		obj._d.m.cc = opt.ccolor or obj._d.m.co
 
 		obj._d.m.mi = -1 -- one loop
 		obj._d.m.dr = rectb
 	end
 
-	if debug.board
+	if opt.board
 	then
 		obj._d.m.mi = 1 -- two loops
 		obj._d.m.x = NULL
 		obj._d.m.y = NULL
 
-		function obj._d.m.db(obj, ax, ay)
-			local x, y = ax or obj._d.m.x, ay or obj._d.m.y
+		function obj._d.m.db(obj)
+			local adj
 
 			for i = -1, obj._d.m.mi, 2
 			do
-				rectb(x + i, y + i, 8 + i * -2, 8 + i * -2, obj._d.m.bc)
+				adj = i * -2
+				rectb(obj._d.m.x + i, obj._d.m.y + i, 8 + adj, 8 + adj, obj._d.m.bc)
 			end
 		end
 
-		if debug.fill == false
+		if opt.fill == false
 		then
-			obj._d.m.cbc = debug.cbcolor or obj._d.m.bc
+			obj._d.m.cbc = opt.cbcolor or obj._d.m.bc
 
 			function obj._d.m.dcb(obj)
-				circb(obj.x + obj._d.m.w, obj.y + obj._d.m.h, 1, obj._d.m.cbc)
+				circb(obj.x + obj._d.m.hw, obj.y + obj._d.m.hh, 1, obj._d.m.cbc)
 			end
 		end
 	end
 end
 
-local function updateMapDebugFields(obj, debug, x, y, sw, sh)
+local function updateMapDebugFields(obj, debug, onCenter, x, y, sw, sh)
 	if not debug or not debug.enableDebug
 	then
 		return
 	end
 
-	addMapDebugFields(obj, debug, sw, sh)
+	addMapDebugFields(obj, debug, onCenter, sw, sh)
 
 	obj._d.m.x = x
 	obj._d.m.y = y
@@ -309,24 +343,24 @@ local function updateMapDebugFields(obj, debug, x, y, sw, sh)
 
 		-- pixel
 		self._d.m.dcb(self)
-		pix(self.x + self._d.m.w, self.y + self._d.m.h, self._d.m.cc)
+		pix(self.x + self._d.m.hw, self.y + self._d.m.hh, self._d.m.cc)
 	end
 end
 
 function getMapGridPosition(obj, onCenter, scalew, scaleh, debug)
-	-- Position; Map
+	-- Pixel position; Map grid position
 	local px, py, mx, my = obj.x, obj.y
 
 	if onCenter
 	then
 		px = px + (8 * (scalew or 1)) // 2
-		py = py + (8 * (scaleh or 1)) // 2
+		py = py + (8 * (scaleh or scalew or 1)) // 2
 	end
 
 	mx, my = px // 8, py // 8
 	px, py = mx  * 8, my  * 8
 
-	updateMapDebugFields(obj, debug, px, py, scalew, scaleh)
+	updateMapDebugFields(obj, debug, onCenter, px, py, scalew, scaleh)
 	return px, py, mx, my
 end
 
@@ -346,15 +380,11 @@ end
 -- COLLISION WITH MAP TILES
 
 function setMapPos(x, y)
-	mapx, mapy = x + 0, y + 0
+	mapx, mapy = x or mapx, y or mapy
 end
 
 function getMapPos()
 	return mapx, mapy
-end
-
-function drawMap(w, h, sx, sy, colorkey, scale, remap)
-	map(mapx, mapy, w, h, sx, sy, colorkey, scale, remap)
 end
 
 local function drawTilep(obj, maintain, anonymFunc)
@@ -661,6 +691,7 @@ end
 function pixs(pixA, pixB, anonymFunc)
 	local result = (pixA.x == pixB.x and pixA.y == pixB.y)
 
+	updateHitboxColor(result, pixA, pixB)
 	return result, callaf(result, anonymFunc, simplepoi, pixA.x, pixA.y)
 end
 
@@ -670,12 +701,14 @@ function pixXrect(pix, rect, anonymFunc)
 	local result = pix.x >= rect.x and pix.x < rect.x + rect.w
                and pix.y >= rect.y and pix.y < rect.y + rect.h
 
+	updateHitboxColor(result, pix, rect)
 	return result, callaf(result, anonymFunc, simplepoi, pix.x, pix.y)
 end
 
 function pixXcirc(pix, circ, anonymFunc)
 	local result = circEucDist(pix, circ, 0)
 
+	updateHitboxColor(result, pix, circ)
 	return result, callaf(result, anonymFunc, simplepoi, pix.x, pix.y)
 end
 
