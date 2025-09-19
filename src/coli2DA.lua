@@ -242,15 +242,15 @@ local function addMapDebugFields(obj, debug, sw, sh)
 		return
 	end
 
-	setDebugGraphColors(obj._d, opt, nil, nil, {co = 5})
+	setDebugGraphColors(obj._d.m, opt, nil, nil, {co = 5})
 	obj._d.m.cc  = debug.ccolor or obj._d.m.bc
-	obj._d.m.cbc = NULL                 -- Center Board Color
-	obj._d.m.hw  = (8 * (sw or 1)) // 2 -- Half Width
-	obj._d.m.hh  = (8 * (sh or 1)) // 2 -- Half Height
-	obj._d.m.dr  = rect                 -- DRaw
-	obj._d.m.mi  = NULL                 -- Max I
-	obj._d.m.db  = EMPTY_FUNC           -- Draw Board
-	obj._d.m.dcb = EMPTY_FUNC           -- Draw Center Board
+	obj._d.m.cbc = NULL                -- Center Board Color
+	obj._d.m.hw = (8 * (sw or 1)) // 2 -- Half Width
+	obj._d.m.hh = (8 * (sh or 1)) // 2 -- Half Height
+	obj._d.m.dr  = rect                -- DRaw
+	obj._d.m.mi  = NULL                -- Max I
+	obj._d.m.db  = EMPTY_FUNC          -- Draw Board
+	obj._d.m.dcb = EMPTY_FUNC          -- Draw Center Board
 
 	if debug.fill == false
 	then
@@ -353,6 +353,10 @@ function getMapPos()
 	return mapx, mapy
 end
 
+function drawMap(w, h, sx, sy, colorkey, scale, remap)
+	map(mapx, mapy, w, h, sx, sy, colorkey, scale, remap)
+end
+
 local function drawTilep(obj, maintain, anonymFunc)
 	for i, dir in ipairs(obj._d.t.cp)
 	do
@@ -426,7 +430,7 @@ local function addTilesDebugFields(obj, opt)
 		{}  -- right
 	}
 
-	setDebugGraphColors(debugField, opt)
+	setDebugGraphColors(obj._d.t, opt)
 	obj._d.t.db = EMPTY_FUNC -- Draw Board
 
 	function obj._d.t:dr(x, y)
@@ -487,9 +491,6 @@ local function checkTileCollision(tcol, dir, flag, mx, my)
 
 	tcol._obj._d.t:ctp(true, dir)
 
-	-- TODO: no-multiple of 8 have
-	-- points in incorrect positions
-	local minloops, x, y = adj[maxfield] == 1 and 1 or 2
 	repeat
 		x, y = tcol._x + adj.x + adj.w, tcol._y + adj.y + adj.h
 
@@ -505,9 +506,11 @@ local function checkTileCollision(tcol, dir, flag, mx, my)
 
 		adj[dfield]    = adj[dfield]    + (adj[maxdfield] > 8 and 8 or adj[maxdfield])
 		adj[maxdfield] = adj[maxdfield] - 8
-		minloops       = minloops - 1
 	until
-		adj[maxdfield] < -1 and minloops == 0
+		adj[maxdfield] < -7 or adj[maxdfield] == -8
+		-- "it all the object width/height was
+		-- scrolled OR the object have only one
+		-- pixel of width/height"
 
 	return false
 end
@@ -542,11 +545,11 @@ function setTilesCollision(obj, flag, rectArea, debug)
 	end
 
 	function obj.tcol:setwh(w, h)
-		self._obj.w = w
-		self._obj.h = h
+		self._w = w + 0
+		self._h = h and h + 0 or w
 
-		self._w = w
-		self._h = h
+		self._obj.w = self._w
+		self._obj.h = self._h
 	end
 
 	function obj.tcol:_ch(direction, mx, my) -- CHeck
