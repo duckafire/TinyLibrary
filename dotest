@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+
+declare -r DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+declare -r TIC_DIR="$HOME/.local/share/com.nesbox.tic/TIC-80"
+declare -r DEST_DIR="$TIC_DIR/wip/tiny-library/tests"
+declare -r SRC_DIR="$DIR/src"
+declare -r LIBS_DIR="$DIR/libs"
+declare -r TESTS_DIR="$DIR/tests"
+
+
+function ok_msg()
+{
+	echo -e '\e[32;1m[dotest]\e[0m\e[32m '"$1"'.\e[0m'
+}
+
+function warn_msg()
+{
+	echo -e '\e[33;1m[dotest]\e[0m\e[33m '"$1"'. It was jumpped.\e[0m'
+}
+
+function fatal_error()
+{
+	echo -e '\e[31;1m[dotest]\e[0m\e[31m '"$1"'.\e[0m\n'
+	exit 1
+}
+
+
+if [[ $# -eq 0 ]]
+then
+	echo -e "dotest <src|lib> <file0> [...fileN]\n"
+	exit 0
+fi
+
+if [[ $# -lt 2 ]]
+then
+	fatal_error "Invalid quantity of arguments"
+fi
+
+
+declare -r TYPE="$1"
+if [[ "$TYPE" = "src" ]]
+then
+	declare -r USING_SRC=0
+
+elif [[ "$TYPE" != "lib" ]]
+then
+	fatal_error "Invalid argument: \"$TYPE\". Expecting \`src\` or \`lib\`"
+
+fi
+
+
+if [[ ! -d "$TIC_DIR" ]]
+then
+	fatal_error "Tic80 repository not found"
+fi
+
+if [[ ! -d "$DEST_DIR" ]]
+then
+	mkdir --parents "$DEST_DIR"
+fi
+
+
+declare first second
+
+for filename in ${@:2}
+do
+	if [[ -v USING_SRC ]]
+	then
+		first="$SRC_DIR/$filename.lua"
+	else
+		first="$LIBS_DIR/$filename.lim"
+	fi
+
+	if [[ ! -f "$first" ]]
+	then
+		if [[ -v USING_SRC ]]
+		then
+			warn_msg "\`./src/$filename.lua\` not found"
+		else
+			warn_msg "\`./libs/$filename.lim\` not found"
+		fi
+		continue
+	fi
+
+	second="$TESTS_DIR/$filename.lua"
+	if [[ ! -f "$second" ]]
+	then
+		warn_msg "\`./tests/$filename.lua\` not found"
+		continue
+	fi
+
+	cat "$first" "$second" > "$DEST_DIR/$filename.lua"
+	ok_msg "Test created to \"$filename\""
+done
+
+echo ""
+exit 0
