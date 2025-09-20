@@ -1,5 +1,5 @@
 <div align="center">
-	<img src="https://raw.githubusercontent.com/duckafire/TinyLibrary/refs/heads/main/asserts/icon.png" width="300">
+	<img src="./asserts/icon.png" width="300">
 	<p>
 		<img src="https://img.shields.io/badge/Last%20release-v1.3.0-%2325a319"/>
 		<img src="https://img.shields.io/badge/License-Zlib-%23a61f82"/>
