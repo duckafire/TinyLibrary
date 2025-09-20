@@ -496,7 +496,7 @@ local function addTilesDebugFields(obj, opt)
 	saveInTable(obj, opt, DEBUG_OBJ_TPOINTS)
 end
 
-local function checkTileCollision(tcol, dir, flag, mx, my)
+local function checkTilesCollisionSides(tcol, dir, flag, mx, my)
 	-- a == Adjust
 	-- d == Dimension
 	-- m == Maximum
@@ -545,6 +545,24 @@ local function checkTileCollision(tcol, dir, flag, mx, my)
 	return false
 end
 
+local function checkTilesCollisionCorners(_t, dirId, flag, mpos)
+	local dirs = {
+		{_t._x -     1, _t._y -     1}, -- top left
+		{_t._x + _t._w, _t._y -     1}, -- top right
+		{_t._x -     1, _t._y + _t._h}, -- bottom left
+		{_t._x + _t._w, _t._y + _t._h}  -- bottom right
+	}
+
+	for i = 1, 2
+	do
+		dirs[ dirId ][i] = dirs[ dirId ][i] // 8 + mpos[i]
+	end
+
+	return fget(mget(table.unpack( dirs[dirId] )), flag)
+end
+
+-- `flag` can be a number or
+-- an array with four numbers
 function setTilesCollision(obj, flag, rectArea, debug)
 	if obj.tcol
 	then
@@ -582,16 +600,27 @@ function setTilesCollision(obj, flag, rectArea, debug)
 		self._obj.h = self._h
 	end
 
-	function obj.tcol:_ch(direction, mx, my) -- CHeck
-		local flag = self._ist and self._f[direction + 1] or self._f
+	function obj.tcol:_gf(direction) -- Get Flag
+		return self._ist and self._f[direction + 1] or self._f
+	end
 
-		return checkTileCollision(self, direction, flag, mx or mapx, my or mapy)
+	function obj.tcol:_ch(direction, mx, my) -- CHeck
+		return checkTilesCollisionSides(self, direction, self:_gf(direction), mx or mapx, my or mapy)
+	end
+
+	function obj.tcol:_cr(direction, mx, my) -- Check coRners
+		return checkTilesCollisionCorners(self, direction + 1, self:_gf(direction), {mx or mapx, my or mapy})
 	end
 
 	function obj.tcol:top(   mx, my) return self:_ch(0, mx, my) end
 	function obj.tcol:bottom(mx, my) return self:_ch(1, mx, my) end
 	function obj.tcol:left(  mx, my) return self:_ch(2, mx, my) end
 	function obj.tcol:right( mx, my) return self:_ch(3, mx, my) end
+
+	function obj.tcol:cornertl( mx, my) return self:_cr(0, mx, my) end
+	function obj.tcol:cornertr( mx, my) return self:_cr(1, mx, my) end
+	function obj.tcol:cornerbl( mx, my) return self:_cr(2, mx, my) end
+	function obj.tcol:cornerbr( mx, my) return self:_cr(3, mx, my) end
 
 	return true
 end
