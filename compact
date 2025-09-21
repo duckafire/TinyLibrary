@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+
+if [[ $# -eq 0 ]]
+then
+	echo -e "compact <beta|final> <file0> [...fileN]\n"
+	exit 0
+fi
+
+
+function ok_msg()
+{
+	echo -e '\e[32;1m[compact]\e[0m\e[32m '"$1"'.\e[0m'
+}
+
+function warn_msg()
+{
+	echo -e '\e[33;1m[compact]\e[0m\e[33m '"$1"'. It was jumpped.\e[0m'
+}
+
+function fatal_error()
+{
+	echo -e '\e[31;1m[compact]\e[0m\e[31m '"$1"'.\e[0m\n'
+	exit 1
+}
+
+
+if ! type "lim" &> /dev/null
+then
+	fatal_error "Command \`lim\` not found"
+fi
+
+if [[ $# -lt 2 ]]
+then
+	fatal_error "Invalid quantity of arguments"
+fi
+
+
+declare -r DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+declare -r SRC_DIR="$DIR/src"
+declare -r LIBS_DIR="$DIR/libs"
+declare -r LIBS_BETA_DIR="$DIR/libs/betas"
+declare destdir
+
+if [[ "$1" = "beta" ]]
+then
+	destdir="$LIBS_BETA_DIR"
+
+elif [[ "$1" = "final" ]]
+then
+	destdir="$LIBS_DIR"
+
+else
+	fatal_error "Invalid argument: \"$1\". Expecting \`beta\` or \`final\`"
+
+fi
+
+declare -A LIBNAMES
+LIBNAMES["coli2DA"]="coli"
+LIBNAMES["print+"]="pplus"
+LIBNAMES["Magic_Palette"]="mpal"
+LIBNAMES["mapper-of-memory"]="mapp"
+
+if [[ ! -d "$LIBS_DIR" ]]
+then
+	mkdir --parents "$LIBS_DIR"
+fi
+
+
+for filename in ${@:2}
+do
+	if [[ ! -f "$SRC_DIR/$filename.lua" ]]
+	then
+		warn_msg "\`./src/$filename.lua\` not found"
+		continue
+	fi
+
+	lim "$SRC_DIR/$filename.lua" --replace --name "$destdir/${filename}" --lib-name "${LIBNAMES[$filename]}"
+	ok_msg "Library file created to \"$filename\""
+done
+
+echo ""
+exit 0
