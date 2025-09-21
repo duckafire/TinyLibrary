@@ -22,7 +22,7 @@ It is a free and open-source **Libraries Collection**, created for to easily the
 | :-:              | :-:     | :--                                                  |
 | coli2DA          | 5.y.z   | It checks collisions between *objects* and map tiles.|
 | print+           | 5.y.z   | It facilites the text customization/manipulation.    |
-| Magic_palette    | 3.y.z   | It changes the color palette during the run time.    |
+| Magic_Palette    | 3.y.z   | It changes the color palette during the run time.    |
 | mapper-of-memory | 4.y.z   | It divides persistent memory slots in small *slots*. |
 
 ### How to use
