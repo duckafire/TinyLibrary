@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
 
-declare -r DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-declare -r TIC_DIR="$HOME/.local/share/com.nesbox.tic/TIC-80"
-declare -r DEST_DIR="$TIC_DIR/wip/tiny-library/tests"
-declare -r SRC_DIR="$DIR/src"
-declare -r LIBS_DIR="$DIR/libs"
-declare -r TESTS_DIR="$DIR/tests"
+if [[ $# -eq 0 ]]
+then
+	echo -e "dotest <src|lib> <file0> [...fileN]\n"
+	exit 0
+fi
 
 
 function ok_msg()
@@ -26,26 +25,27 @@ function fatal_error()
 }
 
 
-if [[ $# -eq 0 ]]
-then
-	echo -e "dotest <src|lib> <file0> [...fileN]\n"
-	exit 0
-fi
-
 if [[ $# -lt 2 ]]
 then
 	fatal_error "Invalid quantity of arguments"
 fi
 
 
-declare -r TYPE="$1"
-if [[ "$TYPE" = "src" ]]
+declare -r DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+declare -r TIC_DIR="$HOME/.local/share/com.nesbox.tic/TIC-80"
+declare -r DEST_DIR="$TIC_DIR/wip/tiny-library/tests"
+declare -r SRC_DIR="$DIR/src"
+declare -r LIBS_DIR="$DIR/libs/betas"
+declare -r TESTS_DIR="$DIR/tests"
+
+
+if [[ "$1" = "src" ]]
 then
 	declare -r USING_SRC=0
 
-elif [[ "$TYPE" != "lib" ]]
+elif [[ "$1" != "lib" ]]
 then
-	fatal_error "Invalid argument: \"$TYPE\". Expecting \`src\` or \`lib\`"
+	fatal_error "Invalid argument: \"$1\". Expecting \`src\` or \`lib\`"
 
 fi
 
