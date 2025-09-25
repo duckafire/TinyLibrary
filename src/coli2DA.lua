@@ -190,10 +190,10 @@ local function addCreationalDebugFields(obj, opt, draw, drawb)
 	saveInTable(obj, opt, DEBUG_OBJ_HITBOXES)
 end
 
-function newRect(_x, _y, _w, _h, debug)
+function newRect(_x, _y, _w, _h, debugv)
 	local obj = {x = _x + 0, y = _y + 0, w = _w + 0, h = type(_h) ~= "number" and _w or _h + 0}
 
-	addCreationalDebugFields(obj, type(_h) == "table" and _h or debug,
+	addCreationalDebugFields(obj, type(_h) == "table" and _h or debugv,
 		function (obj)
 			rectb(obj.x, obj.y, obj.w, obj.h, obj._d.o.co)
 		end,
@@ -208,10 +208,10 @@ function newRect(_x, _y, _w, _h, debug)
 	return obj
 end
 
-function newCirc(_x, _y, _r, debug)
+function newCirc(_x, _y, _r, debugv)
 	local obj = {x = _x + 0, y = _y + 0, r = _r + 0}
 
-	addCreationalDebugFields(obj, debug,
+	addCreationalDebugFields(obj, debugv,
 		function (obj)
 			circb(obj.x, obj.y, obj.r, obj._d.o.co)
 		end,
@@ -226,10 +226,10 @@ function newCirc(_x, _y, _r, debug)
 	return obj
 end
 
-function newPix(_x, _y, debug)
+function newPix(_x, _y, debugv)
 	local obj = {x = _x + 0, y = _y + 0}
 
-	addCreationalDebugFields(obj, debug,
+	addCreationalDebugFields(obj, debugv,
 		function (obj)
 			pix(obj.x, obj.y, obj._d.o.co)
 		end,
@@ -315,13 +315,13 @@ local function addMapDebugFields(obj, opt, onCenter, sw, sh)
 	end
 end
 
-local function updateMapDebugFields(obj, debug, onCenter, x, y, sw, sh)
-	if not debug or not debug.enableDebug
+local function updateMapDebugFields(obj, debugv, onCenter, x, y, sw, sh)
+	if not debugv or not debugv.enableDebug
 	then
 		return
 	end
 
-	addMapDebugFields(obj, debug, onCenter, sw, sh)
+	addMapDebugFields(obj, debugv, onCenter, sw, sh)
 
 	obj._d.m.x = x
 	obj._d.m.y = y
@@ -342,7 +342,7 @@ local function updateMapDebugFields(obj, debug, onCenter, x, y, sw, sh)
 	end
 end
 
-function getMapGridPosition(obj, onCenter, scalew, scaleh, debug)
+function getMapGridPosition(obj, onCenter, scalew, scaleh, debugv)
 	-- Pixel position; Map grid position
 	local px, py, mx, my = obj.x, obj.y
 
@@ -355,7 +355,7 @@ function getMapGridPosition(obj, onCenter, scalew, scaleh, debug)
 	mx, my = px // 8, py // 8
 	px, py = mx  * 8, my  * 8
 
-	updateMapDebugFields(obj, debug, onCenter, px, py, scalew, scaleh)
+	updateMapDebugFields(obj, debugv, onCenter, px, py, scalew, scaleh)
 	return px, py, mx, my
 end
 
@@ -558,7 +558,7 @@ end
 
 -- `flag` can be a number or
 -- an array with four numbers
-function setTilesCollision(obj, flag, rectArea, debug)
+function setTilesCollision(obj, flag, rectArea, debugv)
 	if obj.tcol
 	then
 		return false
@@ -577,7 +577,7 @@ function setTilesCollision(obj, flag, rectArea, debug)
 	obj.tcol._w   = rectArea and rectArea.w or obj.w
 	obj.tcol._h   = rectArea and rectArea.h or obj.h
 
-	addTilesDebugFields(obj, debug)
+	addTilesDebugFields(obj, debugv)
 
 	function obj.tcol:setxy(x, y)
 		self._obj.x = (x or self._obj.x)
@@ -639,9 +639,9 @@ local function updateHitboxColor(result, ...)
 	end
 end
 
-local function circEucDist(obj, circ, objRad)
+local function circEucDist(obj, circv, objRad)
 	-- based EUClidean DISTance (CIRCle)
-	return (obj.x - circ.x) ^ 2 + (obj.y - circ.y) ^ 2 <= (objRad + circ.r) ^ 2
+	return (obj.x - circv.x) ^ 2 + (obj.y - circv.y) ^ 2 <= (objRad + circv.r) ^ 2
 end
 
 -- NOTES:
@@ -702,13 +702,13 @@ function circs(circA, circB, anonymFunc)
 	return result, callaf(result, anonymFunc, cpoi, circA, circB)
 end
 
-function rectXcirc(rect, circ, anonymFunc)
-	local x = math.max(rect.x, math.min(circ.x, rect.x + rect.w - 1))
-	local y = math.max(rect.y, math.min(circ.y, rect.y + rect.h - 1))
+function rectXcirc(rectv, circv, anonymFunc)
+	local x = math.max(rectv.x, math.min(circv.x, rectv.x + rectv.w - 1))
+	local y = math.max(rectv.y, math.min(circv.y, rectv.y + rectv.h - 1))
 
-	local result = circEucDist(newPix(x, y), circ, 0)
+	local result = circEucDist(newPix(x, y), circv, 0)
 
-	updateHitboxColor(result, rect, circ)
+	updateHitboxColor(result, rectv, circv)
 	return result, callaf(result, anonymFunc, simplepoi, x, y)
 end
 
@@ -719,21 +719,21 @@ function pixs(pixA, pixB, anonymFunc)
 	return result, callaf(result, anonymFunc, simplepoi, pixA.x, pixA.y)
 end
 
-function pixXrect(pix, rect, anonymFunc)
+function pixXrect(pixv, rectv, anonymFunc)
 	-- the use of `<`, instead `<=`, allows
 	-- to avoid decrement the additions (by 1)
-	local result = pix.x >= rect.x and pix.x < rect.x + rect.w
-               and pix.y >= rect.y and pix.y < rect.y + rect.h
+	local result = pixv.x >= rectv.x and pixv.x < rectv.x + rectv.w
+               and pixv.y >= rectv.y and pixv.y < rectv.y + rectv.h
 
-	updateHitboxColor(result, pix, rect)
-	return result, callaf(result, anonymFunc, simplepoi, pix.x, pix.y)
+	updateHitboxColor(result, pixv, rectv)
+	return result, callaf(result, anonymFunc, simplepoi, pixv.x, pixv.y)
 end
 
-function pixXcirc(pix, circ, anonymFunc)
-	local result = circEucDist(pix, circ, 0)
+function pixXcirc(pixv, circv, anonymFunc)
+	local result = circEucDist(pixv, circv, 0)
 
-	updateHitboxColor(result, pix, circ)
-	return result, callaf(result, anonymFunc, simplepoi, pix.x, pix.y)
+	updateHitboxColor(result, pixv, circv)
+	return result, callaf(result, anonymFunc, simplepoi, pixv.x, pixv.y)
 end
 
 function setColiMethods(obj, poiMethods)
@@ -754,18 +754,18 @@ function setColiMethods(obj, poiMethods)
 
 	if obj.w
 	then
-		function obj:crect(rect, anonymFunc) return rects(    self, rect, anonymFunc) end
-		function obj:ccirc(circ, anonymFunc) return rectXcirc(self, circ, anonymFunc) end
-		function obj:cpix( pix,  anonymFunc) return pixXrect( pix,  self, anonymFunc) end
+		function obj:crect(rectv, anonymFunc) return rects(    self, rectv, anonymFunc) end
+		function obj:ccirc(circv, anonymFunc) return rectXcirc(self, circv, anonymFunc) end
+		function obj:cpix( pixv,  anonymFunc) return pixXrect( pixv,  self, anonymFunc) end
 	elseif obj.r
 	then
-		function obj:crect(rect, anonymFunc) return rectXcirc(rect, self, anonymFunc) end
-		function obj:ccirc(circ, anonymFunc) return circs(    self, circ, anonymFunc) end
-		function obj:cpix( pix,  anonymFunc) return pixXcirc( pix,  self, anonymFunc) end
+		function obj:crect(rectv, anonymFunc) return rectXcirc(rectv, self, anonymFunc) end
+		function obj:ccirc(circv, anonymFunc) return circs(    self, circv, anonymFunc) end
+		function obj:cpix( pixv,  anonymFunc) return pixXcirc( pixv,  self, anonymFunc) end
 	else
-		function obj:crect(rect, anonymFunc) return pixXrect( self, rect, anonymFunc) end
-		function obj:ccirc(circ, anonymFunc) return pixXcirc( self, circ, anonymFunc) end
-		function obj:cpix( pix,  anonymFunc) return pixs(     self, pix,  anonymFunc) end
+		function obj:crect(rectv, anonymFunc) return pixXrect( self, rectv, anonymFunc) end
+		function obj:ccirc(circv, anonymFunc) return pixXcirc( self, circv, anonymFunc) end
+		function obj:cpix( pixv,  anonymFunc) return pixs(     self, pixv,  anonymFunc) end
 	end
 end
 
